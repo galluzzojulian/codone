@@ -102,26 +102,26 @@ export class ScriptController {
   ) {
     try {
       let existingScripts = await this.getExistingScripts("site", siteId);
-      console.log(
-        "[DEBUG] upsertSiteCustomCode existing scripts:",
-        existingScripts
-      );
+      // console.log(
+      //   "[DEBUG] upsertSiteCustomCode existing scripts:",
+      //   existingScripts
+      // );
 
       // Remove any existing entries for this script ID to avoid duplicates
       existingScripts = existingScripts.filter(
         (script: { id: string }) => script.id !== scriptId
       );
-      console.log(
-        "[DEBUG] upsertSiteCustomCode after filter:",
-        existingScripts
-      );
+      // console.log(
+      //   "[DEBUG] upsertSiteCustomCode after filter:",
+      //   existingScripts
+      // );
 
       // Add the new script configuration
       existingScripts.push({ id: scriptId, location, version });
-      console.log(
-        "[DEBUG] upsertSiteCustomCode final scripts array:",
-        existingScripts
-      );
+      // console.log(
+      //   "[DEBUG] upsertSiteCustomCode final scripts array:",
+      //   existingScripts
+      // );
 
       // Ensure we're sending the correct structure
       return await this.webflow.sites.scripts.upsertCustomCode(siteId, {
@@ -252,19 +252,19 @@ export class ScriptController {
       const getter =
         type === "site" ? this.getSiteCustomCode : this.getPageCustomCode;
       const response = await getter.call(this, id);
-      console.log(
-        `[DEBUG] getExistingScripts raw response for ${type}:`,
-        response
-      );
+      // console.log(
+      //   `[DEBUG] getExistingScripts raw response for ${type}:`,
+      //   response
+      // );
 
       const scripts = type === "site" ? response.scripts || [] : response || [];
-      console.log(
-        `[DEBUG] getExistingScripts processed scripts for ${type}:`,
-        scripts
-      );
+      // console.log(
+      //   `[DEBUG] getExistingScripts processed scripts for ${type}:`,
+      //   scripts
+      // );
       return scripts;
     } catch (error: unknown) {
-      console.error(`[DEBUG] getExistingScripts error for ${type}:`, error);
+      console.error(`Error in getExistingScripts for ${type}:`, error);
       if (isWebflowError(error) && error.statusCode !== 404) throw error;
       return [];
     }

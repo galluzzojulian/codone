@@ -1,5 +1,6 @@
 const base_url = import.meta.env.VITE_NEXTJS_API_URL;
 import { ScriptRegistrationRequest, CodeApplication } from "../../types/types";
+import { logger } from "../../utils/logger";
 
 export const customCodeApi = {
   // Register a new script
@@ -38,7 +39,7 @@ export const customCodeApi = {
       },
       body: JSON.stringify(params),
     });
-    console.log(params);
+    logger.debug("Applying script with params:", params);
     return response.json();
   },
 
@@ -79,7 +80,7 @@ export const customCodeApi = {
     try {
       // Validate siteId
       if (!siteId || siteId === "page") {
-        console.warn("Invalid siteId provided to getBatchStatus:", siteId);
+        logger.warn("Invalid siteId provided to getBatchStatus:", siteId);
         return {};
       }
 
@@ -111,7 +112,7 @@ export const customCodeApi = {
         ...pagesStatus.result,
       };
     } catch (error) {
-      console.error(
+      logger.error(
         "Error in getBatchStatus:",
         { siteId, pageIdsLength: pageIds?.length },
         error

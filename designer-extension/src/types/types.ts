@@ -161,3 +161,15 @@ export interface ImportMetaEnv {
   VITE_NEXTJS_API_URL: string;
   // Add other env variables as needed
 }
+
+// File Types
+export type FileLanguage = "html" | "css" | "js";
+
+export interface SiteFile {
+  id: string;
+  webflow_site_id: string;
+  name: string;
+  language: FileLanguage;
+  code: string;
+  created_at: string;
+}

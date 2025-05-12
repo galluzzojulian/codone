@@ -225,6 +225,14 @@ export async function syncPagesForSite(webflowSiteId: string, webflowClient: any
   const newPages = [];
   const updatedPages = [];
   
+  // Create a set of current Webflow page IDs
+  const currentWebflowPageIds = new Set(webflowPages.map((page: any) => page.id));
+  
+  // Find deleted pages (pages in Supabase but not in Webflow anymore)
+  const deletedPageIds = existingPages
+    .filter(page => !currentWebflowPageIds.has(page.webflow_page_id))
+    .map(page => page.id);
+  
   // Process each Webflow page
   for (const page of webflowPages) {
     const pageName = extractPageName(page);
@@ -272,10 +280,29 @@ export async function syncPagesForSite(webflowSiteId: string, webflowClient: any
     }
   }
   
+  // Delete pages that no longer exist in Webflow
+  let deletedCount = 0;
+  if (deletedPageIds.length > 0) {
+    const { error, count } = await supabase
+      .from('Pages')
+      .delete()
+      .in('id', deletedPageIds);
+      
+    if (error) {
+      throw new Error(`Error deleting removed pages: ${error.message}`);
+    }
+    
+    deletedCount = count || 0;
+  }
+  
   return {
-    total: webflowPages.length,
+    success: true,
+    siteId: webflowSiteId,
+    pageCount: webflowPages.length,
     added: newPages.length,
-    updated: updatedPages.length
+    updated: updatedPages.length,
+    deleted: deletedCount,
+    rawResponse: pagesResponse
   };
 }
 
@@ -305,6 +332,96 @@ function extractPageName(page: any): string {
 }
 
 /**
+ * Inserts a new file record into the Supabase `Files` table.
+ *
+ * @param webflowSiteId - The Webflow site the file belongs to
+ * @param name - Display name for the file
+ * @param language - Programming language (html | css | js)
+ * @param code - Initial source code (optional, defaults to empty string)
+ */
+export async function insertFile(
+  webflowSiteId: string,
+  name: string,
+  language: "html" | "css" | "js",
+  code: string = ""
+) {
+  if (!webflowSiteId || !name || !language) {
+    throw new Error("webflowSiteId, name and language are required");
+  }
+
+  const { data, error } = await supabase
+    .from("Files")
+    .insert({
+      webflow_site_id: webflowSiteId,
+      name,
+      language,
+      code,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error inserting file into Supabase:", error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Retrieves all files for a given Webflow site.
+ *
+ * @param webflowSiteId - The Webflow site ID to filter by
+ */
+export async function getFilesBySiteId(webflowSiteId: string) {
+  if (!webflowSiteId) {
+    throw new Error("webflowSiteId is required");
+  }
+
+  const { data, error } = await supabase
+    .from("Files")
+    .select("*")
+    .eq("webflow_site_id", webflowSiteId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error retrieving files from Supabase:", error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Updates a file record by ID.
+ *
+ * @param fileId - Primary key ID of the file
+ * @param fields - Partial fields to update (e.g., { code })
+ */
+export async function updateFile(
+  fileId: string,
+  fields: Partial<{ name: string; language: string; code: string }>
+) {
+  if (!fileId) {
+    throw new Error("fileId is required");
+  }
+
+  const { data, error } = await supabase
+    .from("Files")
+    .update(fields)
+    .eq("id", fileId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating file in Supabase:", error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
  * Supabase client and utility functions for site operations
  */
 const supabaseClient = {
@@ -314,6 +431,9 @@ const supabaseClient = {
   listAllSites,
   getPagesBySiteId,
   syncPagesForSite,
+  insertFile,
+  getFilesBySiteId,
+  updateFile,
   client: supabase
 };
 

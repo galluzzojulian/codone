@@ -10,11 +10,11 @@ const queryClient = new QueryClient({
       // Prevent duplicate requests in development
       retry: false,
       // Deduplicate requests made within this time window
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 15, // 15 minutes
       // Don't refetch on window focus
       refetchOnWindowFocus: false,
-      // Deduplicate identical requests made within 2 seconds
-      gcTime: 2000,
+      // Deduplicate identical requests made within longer time
+      gcTime: 1000 * 60 * 30, // 30 minutes
     },
   },
 });

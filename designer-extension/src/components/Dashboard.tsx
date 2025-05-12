@@ -8,6 +8,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LanguageIcon from '@mui/icons-material/Language';
+import { FilesSection } from "./FilesSection";
 
 interface DashboardProps {
   user: { firstName: string };
@@ -332,6 +333,11 @@ export function Dashboard({
           </Card>
         </Grid>
       </Grid>
+
+      {/* New: Files Section */}
+      {currentSite && (
+        <FilesSection siteId={currentSite.id} />
+      )}
     </Container>
   );
 }

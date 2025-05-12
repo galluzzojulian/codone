@@ -1,3 +1,5 @@
+import { logger } from "../utils/logger";
+
 interface UseDevToolsProps {
   logout: () => void;
   setHasClickedFetch?: (value: boolean) => void;
@@ -27,10 +29,10 @@ export function useDevTools({ logout, setHasClickedFetch }: UseDevToolsProps) {
       // 5. Finally logout
       logout();
 
-      console.log("Everything cleared successfully");
+      logger.info("Everything cleared successfully");
       return true;
     } catch (error) {
-      console.error("Error clearing everything:", error);
+      logger.error("Error clearing everything:", error);
       return false;
     }
   };
@@ -57,10 +59,9 @@ export function useDevTools({ logout, setHasClickedFetch }: UseDevToolsProps) {
     }
 
     // Log with better formatting
-    console.group("Storage Contents");
-    console.log("Local Storage:", localStorageItems);
-    console.log("Session Storage:", sessionStorageItems);
-    console.groupEnd();
+    logger.debug("Storage Contents");
+    logger.debug("Local Storage:", localStorageItems);
+    logger.debug("Session Storage:", sessionStorageItems);
   };
 
   return {

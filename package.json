@@ -1,15 +1,15 @@
 {
-  "name": "hybrid-webflow-app_nextjs-vite",
-  "version": "1.0.0",
-  "description": "",
+  "name": "codone",
+  "version": "0.1.0",
+  "description": "A Webflow Hybrid App for integrating custom code and data handling capabilities",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently \"cd data-client && npm install && npm run dev\" \"cd designer-extension && npm install && npm run dev\"",
     "build": "concurrently \"cd data-client && npm install && npm run build\" \"cd designer-extension && npm install && npm run build\""
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Julian Galluzzo",
+  "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
     "concurrently": "^9.1.0"

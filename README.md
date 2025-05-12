@@ -1,39 +1,28 @@
-# Hybrid App Starter
+# Codone v0.1.0
 
-A starter project for creating a Webflow Hybrid App that demonstrates OAuth authentication from the Webflow UI and basic Data and Designer API interactions. This project provides a simple example of how to:
+A Webflow Hybrid App for integrating custom code and data handling capabilities into Webflow projects. Codone provides powerful tools for:
 
-- [Set up a Webflow Data Client server](https://developers.webflow.com/v2.0.0/data/docs/getting-started-data-clients)
-- [Set up a Webflow Designer Extension frontend](https://developers.webflow.com/v2.0.0/designer/docs/getting-started-designer-extensions)
-- [Authenticate from the Designer Extension](https://developers.webflow.com/v2.0.0/data/docs/authenticating-users-with-id-tokens)
-- [Make Data API calls](https://developers.webflow.com/designer/reference/introduction)
-- [Make Designer API calls](https://developers.webflow.com/designer/reference/introduction)
+- Managing custom code across Webflow sites
+- Synchronizing pages and site data
+- Enhanced development workflows with debugging tools
+- Supabase integration for persistent data storage
 
-## 🚀 Quick start
+## 🎉 Release v0.1.0
 
-1. Create a Webflow site if you haven't already at [webflow.com](https://webflow.com)
-2. Register your app in [your Workspace](https://developers.webflow.com/v2.0.0/data/docs/register-an-app) Be sure to add a redirect URI to `localhost:3000/api/auth/callback` and the required scopes:
-   
-   - `authorized_user: read`
-   - `sites:read` `sites:write`
-   - `custom_code:read` `custom_code:write`
+This initial release includes:
+- Secure authentication with Webflow sites
+- Ability to sync pages with Supabase for persistent storage
+- Basic framework for custom code management
 
-3. Clone this repository and install the dependencies:
+## 🚀 Quick Start
+
+1. Clone this repository and install the dependencies:
 
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
-4. Install the Webflow CLI:
-
-   ```bash
-   npm install -g @webflow/cli
-   # or
-   yarn global add @webflow/cli
-   ```
-
-5. Navigate to the `/data-client` folder and create a `.env` file by copying `.env.example`. Fill in your app credentials, which can be found in your Webflow Dashboard under Integrations > App Development > Your App Details:
+2. Navigate to the `/data-client` folder and create a `.env` file with your Webflow app credentials:
 
    ```env
    WEBFLOW_CLIENT_ID=xxx
@@ -42,78 +31,67 @@ A starter project for creating a Webflow Hybrid App that demonstrates OAuth auth
    PORT=3000
    ```
 
-6. Run the Data Client and Designer Extension together as a Hybrid App. The run command will install the dependencies and start the server and the designer extension:
+3. Add your Supabase credentials to the `.env` file:
+
+   ```env
+   SUPABASE_URL=xxx
+   SUPABASE_KEY=xxx
+   ```
+
+4. Run the Data Client and Designer Extension together:
 
    ```bash
    npm run dev
-   # or
-   yarn dev
    ```
 
-7. Install your app by navigating to `http://localhost:3000` in your web browser. This will redirect you to the Webflow Authorization page where you can authorize the app for your workspace.
+5. Install your app by navigating to `http://localhost:3000` in your web browser.
 
-8. Open your Webflow Site. Open the Apps panel and click on your App. When the panel opens click the "Launch Development App" button
-
-9. Click the Authorize button to authenticate your App and start using the Data and Designer APIs
+6. Open your Webflow Site, access the Apps panel, and click on Codone. Click "Launch Development App" and authorize to begin using the app.
 
 ## 🛠️ Tech Stack
 
-- Data Client:
-  - **[Webflow SDK](https://github.com/webflow/js-webflow-api)** - Official Webflow API client
-- Designer Extension:
-  - **[Webflow Designer API](https://www.npmjs.com/package/@webflow/designer-extension-typings?activeTab=readme)** - Official Webflow Designer API client
-  - **[Vite](https://vitejs.dev/)** - Build tool for modern web development
-  - **[JWT-Decode](https://github.com/auth0/jwt-decode)** - Decode JWT tokens
-  - **[React](https://reactjs.org/)** - JavaScript library for building user interfaces
+- **Backend (Data Client):**
+  - [Next.js](https://nextjs.org/) for API routes and server-side functionality
+  - [Webflow SDK](https://github.com/webflow/js-webflow-api) for Webflow API integration
+  - [Supabase](https://supabase.com/) for data persistence
 
-## 📝 Important Notes
+- **Frontend (Designer Extension):**
+  - [React](https://reactjs.org/) with [Vite](https://vitejs.dev/) for a fast development experience
+  - [Material UI](https://mui.com/) for component styling
+  - [Webflow Designer API](https://www.npmjs.com/package/@webflow/designer-extension-typings) for Designer interactions
 
-- This is a **development-only** example and should not be used in production
-- The database is cleared when the server stops (see `cleanup` function)
-- Access tokens are stored unencrypted - in production, you should:
-  - Encrypt sensitive data
-  - Use a proper database
-  - Implement token refresh
-  - Add error handling
-  - Add user sessions
+## 🔍 Features
 
-## 🔍 Project Structure
+- **Custom Code Management:** Create, update and manage custom code across multiple pages
+- **Page Synchronization:** Keep pages in sync with your development workflow
+- **Development Tools:** Debug your Webflow site with enhanced developer tools
+- **Persistent Storage:** Store site settings and configurations in Supabase
+- **Multi-Site Support:** Manage multiple Webflow sites from a single interface
+
+## 📁 Project Structure
 
 ```
 .
-├── data-client/                      # Backend server
+├── data-client/                    # Backend server
 │   ├── app/
-│   │   ├── api/                     # API Routes
-│   │   │   ├── auth/               # Auth endpoints
-│   │   │   └── custom-code/        # Custom code endpoints
-│   │   ├── lib/                    # Server utilities
-│   │   │   ├── controllers/        # Logic for handling requests and responses using the Webflow SDK
-│   │   └── db/                     # Database
-│   ├── .env.example                # Environment template
-│   └── package.json
+│   │   ├── api/                   # API Routes
+│   │   │   ├── auth/             # Auth endpoints
+│   │   │   ├── pages/            # Page management endpoints
+│   │   │   ├── sites/            # Site management
+│   │   │   └── supabase-sites/   # Supabase integration
+│   │   ├── dashboard/            # Dashboard UI
+│   │   ├── lib/                  # Server utilities
+│   │   └── page.tsx              # Main landing page
 │
-├── designer-extension/              # Frontend app
+├── designer-extension/            # Frontend app
 │   ├── src/
-│   │   ├── components/             # React components
-│   │   ├── hooks/                  # Custom hooks
-│   │   ├── services/               # API services/logic
-│   │   ├── types/                  # TypeScript types
-│   │   └── App.tsx                 # Main app component
-│   ├── .env.development            # Dev environment variables
-│   └── package.json
-│└── package.json                     # Root package.json
+│   │   ├── components/           # React components
+│   │   │   ├── CustomCode/       # Custom code management UI
+│   │   │   └── DevTools/         # Developer tools UI
+│   │   ├── hooks/                # Custom React hooks
+│   │   └── App.tsx               # Main app component
 ```
 
-## 📚 Additional Resources
+## 📚 License
 
-- [OAuth 2.0 Implementation Guide](https://developers.webflow.com/v2.0.0/data/docs/oauth)
-- [Hybrid App Authentication](https://developers.webflow.com/v2.0.0/data/docs/authenticating-users-with-id-tokens)
-- [Available API Scopes](https://developers.webflow.com/v2.0.0/data/reference/scopes)
-
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## 📄 License
-
-This project is MIT licensed.
+This project is licensed under the MIT License.

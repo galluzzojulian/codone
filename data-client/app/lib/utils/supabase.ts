@@ -422,6 +422,35 @@ export async function updateFile(
 }
 
 /**
+ * Updates a page record by ID.
+ *
+ * @param pageId - Primary key ID of the page
+ * @param fields - Partial fields to update (e.g., { head_files, body_files, name })
+ */
+export async function updatePage(
+  pageId: string,
+  fields: Partial<{ head_files: string[]; body_files: string[]; name: string }>
+) {
+  if (!pageId) {
+    throw new Error("pageId is required");
+  }
+
+  const { data, error } = await supabase
+    .from("Pages")
+    .update(fields)
+    .eq("id", pageId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating page in Supabase:", error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
  * Supabase client and utility functions for site operations
  */
 const supabaseClient = {
@@ -434,6 +463,7 @@ const supabaseClient = {
   insertFile,
   getFilesBySiteId,
   updateFile,
+  updatePage,
   client: supabase
 };
 

@@ -9,6 +9,7 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LanguageIcon from '@mui/icons-material/Language';
 import { FilesSection } from "./FilesSection";
+import { PageFileManager } from "./PageFileManager";
 
 interface DashboardProps {
   user: { firstName: string };
@@ -337,6 +338,11 @@ export function Dashboard({
       {/* New: Files Section */}
       {currentSite && (
         <FilesSection siteId={currentSite.id} />
+      )}
+
+      {/* New: Page Code Manager */}
+      {currentSite && (
+        <PageFileManager siteId={currentSite.id} />
       )}
     </Container>
   );

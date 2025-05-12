@@ -17,6 +17,7 @@ export function usePages(siteId: string | undefined) {
       if (!siteId) return [];
 
       const pagesData = await webflow.getAllPagesAndFolders();
+      console.log("Web flow pages raw:", pagesData);
       return Promise.all(
         pagesData.map(async (page) => ({
           id: page.id,

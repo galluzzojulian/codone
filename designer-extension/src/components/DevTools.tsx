@@ -1,4 +1,4 @@
-import { Box, Button, Typography, Paper } from "@mui/material";
+import { Box, Button, Typography, Paper, Divider } from "@mui/material";
 import { useDevTools } from "../hooks/useDevTools";
 
 interface DevToolsProps {
@@ -24,32 +24,47 @@ export function DevTools({ logout, setHasClickedFetch }: DevToolsProps) {
 
   return (
     <Paper
+      elevation={0}
       sx={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 2,
-        backgroundColor: "#f5f5f5",
-        borderTop: "1px solid #ddd",
-        zIndex: 1000,
-        maxHeight: "80px",
+        padding: 3,
+        mt: 4,
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h3" gutterBottom color="text.primary" sx={{ fontSize: '1.1rem' }}>
         Development Tools
       </Typography>
+      
+      <Divider sx={{ my: 2 }} />
 
       <Box sx={{ display: "flex", gap: 2 }}>
-        <Button variant="outlined" color="primary" onClick={handleLogout}>
+        <Button 
+          variant="outlined" 
+          color="primary" 
+          onClick={handleLogout}
+          size="small"
+        >
           Logout
         </Button>
 
-        <Button variant="outlined" color="error" onClick={handleClearClick}>
+        <Button 
+          variant="outlined" 
+          color="error" 
+          onClick={handleClearClick}
+          size="small"
+        >
           Clear Session
         </Button>
 
-        <Button variant="outlined" onClick={logStorage}>
+        <Button 
+          variant="outlined" 
+          onClick={logStorage}
+          size="small"
+          sx={{ borderColor: 'divider', color: 'text.secondary' }}
+        >
           Log Storage
         </Button>
       </Box>

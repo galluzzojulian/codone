@@ -5,13 +5,11 @@ export interface Site {
   name: string;
 }
 
-/*
-  Custom hook for fetching and managing sites from the Next.js API.
-  This hook handles:
-  - Getting current site info from Webflow Designer API
-  - Fetching all accessible sites for the current user
-  - Managing site selection state
-*/
+/**
+ * Custom hook for fetching and managing sites from Webflow.
+ * This hook prioritizes the current site from Webflow Designer API
+ * and falls back to fetching accessible sites from the backend API.
+ */
 export function useSites(sessionToken: string, hasClickedFetch: boolean) {
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
 
@@ -19,38 +17,63 @@ export function useSites(sessionToken: string, hasClickedFetch: boolean) {
   const currentSiteQuery = useQuery({
     queryKey: ["currentSite"],
     queryFn: async () => {
-      const siteInfo = await webflow.getSiteInfo();
-      return {
-        id: siteInfo.siteId,
-        name: siteInfo.siteName,
-      };
+      try {
+        // Get the current site info from Webflow Designer API
+        const siteInfo = await webflow.getSiteInfo();
+        return {
+          id: siteInfo.siteId,
+          name: siteInfo.siteName,
+        };
+      } catch (error) {
+        console.error("Error fetching current site:", error);
+        return null;
+      }
     },
   });
 
-  // Query for all accessible sites
+  // Query for all accessible sites - only if necessary
   const sitesQuery = useQuery({
     queryKey: ["sites", sessionToken],
     queryFn: async () => {
+      // If we have the current site, use that instead of making an API call
+      if (currentSiteQuery.data) {
+        return [currentSiteQuery.data];
+      }
+
       if (!sessionToken) {
         return [];
       }
 
-      const response = await fetch(`${base_url}/api/sites`, {
-        headers: {
-          Authorization: `Bearer ${sessionToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+      try {
+        const response = await fetch(`${base_url}/api/sites`, {
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+            "Content-Type": "application/json",
+          },
+        });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch sites: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch sites: ${response.statusText}`);
+        }
+
+        // Parse response and return sites
+        const data = await response.json();
+        return data.sites || [];
+      } catch (error) {
+        console.error("Error fetching all sites:", error);
+        
+        // If API call fails but we have current site data, return that
+        if (currentSiteQuery.data) {
+          return [currentSiteQuery.data];
+        }
+        
+        return [];
       }
-
-      // Parse response and return sites
-      const data = await response.json();
-      return data.data.sites || [];
     },
-    enabled: Boolean(sessionToken) && hasClickedFetch,
+    enabled: Boolean(
+      (sessionToken && hasClickedFetch) || 
+      (currentSiteQuery.isSuccess && currentSiteQuery.data)
+    ),
   });
 
   return {
@@ -58,11 +81,11 @@ export function useSites(sessionToken: string, hasClickedFetch: boolean) {
     currentSite: currentSiteQuery.data,
     isCurrentSiteLoading: currentSiteQuery.isLoading,
 
-    // All accessible sites
-    sites: sitesQuery.data || [],
-    isLoading: sitesQuery.isLoading,
-    isError: sitesQuery.isError,
-    error: sitesQuery.error,
+    // All accessible sites (with fallback to current site)
+    sites: sitesQuery.data || (currentSiteQuery.data ? [currentSiteQuery.data] : []),
+    isLoading: sitesQuery.isLoading && currentSiteQuery.isLoading,
+    isError: sitesQuery.isError && currentSiteQuery.isError,
+    error: sitesQuery.error || currentSiteQuery.error,
     fetchSites: sitesQuery.refetch,
   };
 }

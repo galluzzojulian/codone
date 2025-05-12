@@ -1,7 +1,13 @@
-import { Container, Typography, Button } from "@mui/material";
+import { Container, Typography, Button, Box, Paper, Grid, Card, CardContent, Divider, Chip, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { LoadingStates } from "./LoadingStates.tsx";
 import DataTable from "./DataTable";
 import { Site } from "../types/types.ts";
+import { useState, useEffect } from 'react';
+import { useAuth } from "../hooks/useAuth";
+import RefreshIcon from '@mui/icons-material/Refresh';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LanguageIcon from '@mui/icons-material/Language';
 
 interface DashboardProps {
   user: { firstName: string };
@@ -17,17 +23,8 @@ interface DashboardProps {
  *
  * The main interface after user authentication. This component:
  * 1. Welcomes the user with their first name
- * 2. Provides controls to fetch and display authorized Webflow sites
- * 3. Handles loading and error states during data fetching
- * 4. Displays site data in a table format when available
- *
- * @param user - Contains user information (e.g., firstName)
- * @param sites - Array of Webflow sites the user has access to
- * @param isLoading - Indicates if sites are being fetched
- * @param isError - Indicates if an error occurred during fetch
- * @param error - Error message to display if fetch failed
- * @param onFetchSites - Callback to trigger site data fetching
- *
+ * 2. Displays the currently active Webflow site
+ * 3. Provides a button to sync pages for the current site
  */
 export function Dashboard({
   user,
@@ -37,26 +34,304 @@ export function Dashboard({
   error,
   onFetchSites,
 }: DashboardProps) {
+  // Get the authentication token
+  const { sessionToken } = useAuth();
+  
+  // Get the base URL for API calls
+  const base_url = import.meta.env.VITE_NEXTJS_API_URL;
+  
+  // State
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentSite, setCurrentSite] = useState<Site | null>(null);
+  const [debugResult, setDebugResult] = useState<string | null>(null);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  
+  // Get the current site automatically on load
+  useEffect(() => {
+    if (!isLoading && sites && sites.length > 0 && !currentSite) {
+      setCurrentSite(sites[0]);
+    }
+  }, [sites, isLoading, currentSite]);
+
+  // Reset success state after 3 seconds
+  useEffect(() => {
+    if (syncSuccess) {
+      const timer = setTimeout(() => {
+        setSyncSuccess(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncSuccess]);
+  
+  // Debug function to check site details
+  const handleDebugSites = async () => {
+    if (!currentSite) {
+      alert("No site available. Please reload the app.");
+      return;
+    }
+    
+    try {
+      // Call our debug endpoint using the correct base URL
+      const response = await fetch(`${base_url}/api/pages/debug?siteId=${currentSite.id}`, {
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Debug request failed: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      setDebugResult(JSON.stringify(result, null, 2));
+    } catch (error) {
+      console.error("Debug error:", error);
+      alert(`Debug error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  
+  // Sync pages for the current site
+  const handleRefreshPages = async () => {
+    if (!currentSite) {
+      alert("No site available. Please reload the app.");
+      return;
+    }
+    
+    // Check for authentication token
+    if (!sessionToken) {
+      alert("Authentication required. Please reload the app.");
+      return;
+    }
+    
+    setIsRefreshing(true);
+    
+    try {
+      // Call API with the site ID and auth token
+      const response = await fetch(`${base_url}/api/pages/sync?siteId=${currentSite.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        }
+      });
+      
+      const responseText = await response.text();
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        alert("Invalid response from server. See console for details.");
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Failed to sync pages: ${response.statusText}`);
+      }
+      
+      setSyncSuccess(true);
+    } catch (error) {
+      console.error('Error syncing pages:', error);
+      alert(`Failed to sync pages: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
-    <Container>
-      <Typography variant="h1">Hello {user.firstName} 👋🏾</Typography>
-      <Button
-        variant="contained"
-        sx={{ margin: "10px 20px" }}
-        onClick={onFetchSites} // Fetch sites when the button is clicked
-        disabled={isLoading} // Disable the button while loading
+    <Container maxWidth="lg" sx={{ pt: 4, pb: 2 }}>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 3, 
+          mb: 4, 
+          backgroundColor: 'background.paper',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider'
+        }}
       >
-        {isLoading ? "Loading Sites..." : "List Authorized Sites"}{" "}
-        {/* Button text */}
-      </Button>
+        <Grid container spacing={3} alignItems="center">
+          <Grid item xs={12} sm={7}>
+            <Typography variant="h1" sx={{ mb: 0.5, color: 'text.primary' }}>
+              Hello, {user.firstName} 👋
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Welcome to your Webflow extension dashboard
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={5} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+            {currentSite && (
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                px: 2, 
+                py: 1, 
+                bgcolor: 'rgba(255, 255, 255, 0.05)', 
+                borderRadius: 2, 
+                border: '1px solid', 
+                borderColor: 'divider' 
+              }}>
+                <LanguageIcon sx={{ color: 'primary.main', mr: 1, fontSize: 20 }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Current site</Typography>
+                  <Typography variant="body2" fontWeight={500} color="text.primary">{currentSite.displayName}</Typography>
+                </Box>
+              </Box>
+            )}
+          </Grid>
+        </Grid>
+      </Paper>
 
-      {/* Display loading and error states */}
-      <LoadingStates isLoading={isLoading} isError={isError} error={error} />
-
-      {/* Display the sites data in a table format */}
-      {!isLoading && !isError && sites && sites.length > 0 && (
-        <DataTable data={sites} />
-      )}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card 
+            elevation={0} 
+            sx={{ 
+              borderRadius: 2, 
+              border: '1px solid', 
+              borderColor: 'divider', 
+              height: '100%',
+              bgcolor: 'background.paper'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h3" gutterBottom color="text.primary">
+                Site Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Synchronize and manage your Webflow site's content and pages
+              </Typography>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  startIcon={isRefreshing ? <CircularProgress size={20} color="inherit" /> : syncSuccess ? <CheckCircleIcon /> : <RefreshIcon />}
+                  onClick={handleRefreshPages}
+                  disabled={isRefreshing || !currentSite}
+                  sx={{ px: 3 }}
+                >
+                  {isRefreshing ? "Synchronizing..." : syncSuccess ? "Success!" : "Sync Pages"}
+                </Button>
+                
+                <Tooltip title="Debug site data">
+                  <IconButton 
+                    onClick={handleDebugSites}
+                    disabled={!currentSite}
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'divider',
+                      borderRadius: 1.5,
+                      p: 1,
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <BugReportIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Card 
+            elevation={0} 
+            sx={{ 
+              borderRadius: 2, 
+              border: '1px solid', 
+              borderColor: 'divider',
+              height: '100%',
+              bgcolor: 'background.paper'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h3" gutterBottom color="text.primary">
+                Site Details
+              </Typography>
+              
+              {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : isError ? (
+                <Typography color="error" variant="body2">
+                  {error}
+                </Typography>
+              ) : currentSite ? (
+                <Box sx={{ mt: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="caption" color="text.secondary">
+                        Site ID
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5 }} color="text.primary">
+                        {currentSite.id}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 1 }} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="caption" color="text.secondary">
+                        Status
+                      </Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <Chip 
+                          label="Connected" 
+                          size="small" 
+                          sx={{ 
+                            bgcolor: 'rgba(67, 83, 255, 0.2)', 
+                            color: '#4353ff',
+                            fontWeight: 500,
+                            fontSize: '0.75rem'
+                          }} 
+                        />
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No site data available</Typography>
+              )}
+              
+              {debugResult && (
+                <Box sx={{ mt: 3 }}>
+                  <Divider sx={{ mb: 2 }} />
+                  <Typography variant="caption" color="text.secondary">Debug Output</Typography>
+                  <Box 
+                    sx={{ 
+                      mt: 1,
+                      p: 1.5, 
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)', 
+                      borderRadius: 1,
+                      maxHeight: '140px',
+                      overflow: 'auto',
+                      fontSize: '12px',
+                      fontFamily: 'monospace',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      '&::-webkit-scrollbar': {
+                        width: '8px',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '4px',
+                      },
+                    }}
+                  >
+                    <pre style={{ margin: 0 }}>{debugResult}</pre>
+                  </Box>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Container>
   );
 }

@@ -8,8 +8,20 @@ import {
 } from "@mui/material";
 import { Site } from "../types/types";
 
-const DataTable = ({ data }: { data: Site[] }) => {
+interface DataTableProps {
+  data: Site[];
+  onRowSelect?: (siteId: string) => void;
+  selectedRow?: string | null;
+}
+
+const DataTable = ({ data, onRowSelect, selectedRow }: DataTableProps) => {
   webflow.setExtensionSize("large");
+
+  const handleRowClick = (siteId: string) => {
+    if (onRowSelect) {
+      onRowSelect(siteId);
+    }
+  };
 
   return (
     <Paper sx={{ maxHeight: "275px", overflow: "auto" }}>
@@ -25,7 +37,17 @@ const DataTable = ({ data }: { data: Site[] }) => {
         </TableHead>
         <TableBody>
           {data.map((item) => (
-            <TableRow key={item.id}>
+            <TableRow 
+              key={item.id} 
+              onClick={() => handleRowClick(item.id)}
+              sx={{ 
+                cursor: onRowSelect ? 'pointer' : 'default',
+                backgroundColor: selectedRow === item.id ? 'rgba(0, 0, 0, 0.04)' : 'inherit',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)'
+                }
+              }}
+            >
               <TableCell>{item.displayName}</TableCell>
               <TableCell>{item.id}</TableCell>
               <TableCell>

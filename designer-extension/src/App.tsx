@@ -1,30 +1,23 @@
 import { useEffect, useState, useRef } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, Box } from "@mui/material";
 
-import { Navigation } from "./components/Navigation";
-import { CustomCodeDashboard } from "./components/CustomCode/CustomCodeDashboard";
-import { AuthScreen } from "./components/AuthScreen";
+// Components
 import { Dashboard } from "./components/Dashboard";
+import { AuthScreen } from "./components/AuthScreen";
 import { DevTools } from "./components/DevTools";
-import { useAuth } from "./hooks/useAuth"; // Manages authentication state and provides login/logout functionality
-import { useSites } from "./hooks/useSites"; // Fetches and manages site data using the session token
+
+// Hooks and utilities
+import { useAuth } from "./hooks/useAuth";
+import { useSites } from "./hooks/useSites";
 import { theme } from "./components/theme";
+
+// Styles
 import "./App.css";
-import { ElementsDashboard } from "./components/Elements/ElementsDashboard";
 
 /**
- * App.tsx serves as the main entry point and demonstrates:
- * 1. Authentication flow with Webflow's Designer and Data APIs
- * 2. Data fetching patterns using React Query
- * 3. State management for user sessions
- * 4. Development tools for testing
- *
- * The code is intentionally verbose to show common patterns
- * you might need when building your own Webflow App.
+ * App.tsx serves as the main entry point for the Webflow App.
+ * It handles authentication flow, routing, and data fetching.
  */
-
-// This is the main App Component. It handles the initial setup and rendering of the Dashboard.
 function AppContent() {
   const [hasClickedFetch, setHasClickedFetch] = useState(false);
   const { user, sessionToken, exchangeAndVerifyIdToken, logout } = useAuth();
@@ -33,7 +26,7 @@ function AppContent() {
     hasClickedFetch
   );
 
-  // Move ref outside useEffect to persist across renders
+  // Store if auth token was already checked to avoid redundant checks
   const hasCheckedToken = useRef(false);
 
   useEffect(() => {
@@ -53,7 +46,7 @@ function AppContent() {
       hasCheckedToken.current = true;
     }
 
-    // Handle the authentication complete event
+    // Handle the authentication complete event from popup
     const handleAuthComplete = async (event: MessageEvent) => {
       if (event.data === "authComplete") {
         localStorage.removeItem("explicitly_logged_out");
@@ -65,7 +58,6 @@ function AppContent() {
     window.addEventListener("message", handleAuthComplete);
     return () => {
       window.removeEventListener("message", handleAuthComplete);
-      // Reset the check on unmount so it can run again if needed
       hasCheckedToken.current = false;
     };
   }, [exchangeAndVerifyIdToken]);
@@ -76,46 +68,22 @@ function AppContent() {
     fetchSites();
   };
 
-  // Render the app
   return (
-    <BrowserRouter>
-      <Box sx={{ pb: 8 }}>
-        <Navigation />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              // If the user is authenticated, render the dashboard
-              sessionToken ? (
-                <Dashboard
-                  user={user}
-                  sites={sites}
-                  isLoading={isLoading}
-                  isError={isError}
-                  error={error?.message || ""}
-                  onFetchSites={handleFetchSites}
-                />
-              ) : (
-                // If the user is not authenticated, render the auth screen
-                <AuthScreen onAuth={() => {}} />
-              )
-            }
-          />
-          <Route path="/custom-code" element={<CustomCodeDashboard />} />
-          <Route
-            path="/elements"
-            element={
-              sessionToken ? (
-                <ElementsDashboard />
-              ) : (
-                <AuthScreen onAuth={() => {}} />
-              )
-            }
-          />{" "}
-        </Routes>
-      </Box>
+    <Box>
+      {sessionToken ? (
+        <Dashboard
+          user={user}
+          sites={sites}
+          isLoading={isLoading}
+          isError={isError}
+          error={error?.message || ""}
+          onFetchSites={handleFetchSites}
+        />
+      ) : (
+        <AuthScreen onAuth={() => {}} />
+      )}
       <DevTools logout={logout} setHasClickedFetch={setHasClickedFetch} />
-    </BrowserRouter>
+    </Box>
   );
 }
 

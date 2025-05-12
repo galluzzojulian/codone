@@ -10,10 +10,10 @@ import { OauthScope } from "webflow-api/api/types/OAuthScope";
 
 const scopes = [
   "sites:read",
-  "sites:write",
   "custom_code:read",
   "custom_code:write",
   "authorized_user:read",
+  "pages:read",
 ];
 
 export async function GET(request: Request) {

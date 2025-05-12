@@ -1,27 +1,21 @@
 import { Container, Typography, Button } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
+import { useState } from "react";
 
 /**
  * AuthScreen Component
  *
- * Displays the initial authentication screen with a button to start the OAuth flow.
- * If a user clicks the button, this component will open a popup window and monitor its state.
- * Once the popup is closed, it will trigger the onAuth callback in the parent component.
+ * Displays an authentication flow showing a button to authorize the app with Webflow
  *
  * @param onAuth - Callback function that runs after successful authentication.
- *                 This allows the parent component to respond to the auth completion
- *                 (e.g., refreshing the app state, navigating to a new page).
- *
- * Usage example:
- * <AuthScreen onAuth={() => console.log('User authenticated!')} />
  */
 export function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
-
+  
   // Initialize the auth hook which provides methods for authentication
   const { user } = useAuth();
 
-  // Function to open the authorization popup authorization window
+  // Function to open the authorization popup window
   const openAuthScreen = () => {
     console.log("Opening auth window..."); // Debug
     const authWindow = window.open(
@@ -48,6 +42,7 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
           ? `Welcome back ${user.firstName} 👋🏾`
           : "Hello Stranger 👋🏾"}
       </Typography>
+      
       <Button
         variant="contained"
         sx={{ margin: "10px 20px" }}

@@ -4,7 +4,6 @@ import { ThemeProvider, Box } from "@mui/material";
 // Components
 import { Dashboard } from "./components/Dashboard";
 import { AuthScreen } from "./components/AuthScreen";
-import { DevTools } from "./components/DevTools";
 
 // Hooks and utilities
 import { useAuth } from "./hooks/useAuth";
@@ -78,11 +77,12 @@ function AppContent() {
           isError={isError}
           error={error?.message || ""}
           onFetchSites={handleFetchSites}
+          logout={logout}
+          setHasClickedFetch={setHasClickedFetch}
         />
       ) : (
         <AuthScreen onAuth={() => {}} />
       )}
-      <DevTools logout={logout} setHasClickedFetch={setHasClickedFetch} />
     </Box>
   );
 }

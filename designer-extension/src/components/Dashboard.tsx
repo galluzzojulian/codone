@@ -10,6 +10,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LanguageIcon from '@mui/icons-material/Language';
 import { FilesSection } from "./FilesSection";
 import { PageFileManager } from "./PageFileManager";
+import { useDevTools } from "../hooks/useDevTools";
 
 interface DashboardProps {
   user: { firstName: string };
@@ -18,6 +19,8 @@ interface DashboardProps {
   isError: boolean;
   error: string;
   onFetchSites: () => void;
+  logout: () => void;
+  setHasClickedFetch: (value: boolean) => void;
 }
 
 /**
@@ -35,9 +38,15 @@ export function Dashboard({
   isError,
   error,
   onFetchSites,
+  logout,
+  setHasClickedFetch
 }: DashboardProps) {
   // Get the authentication token
   const { sessionToken } = useAuth();
+  const { clearSession, logStorage } = useDevTools({
+    logout,
+    setHasClickedFetch,
+  });
   
   // Get the base URL for API calls
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
@@ -141,8 +150,19 @@ export function Dashboard({
     }
   };
 
+  const handleClearClick = () => {
+    clearSession();
+    window.location.reload(); // Force a complete refresh after clearing
+  };
+
+  const handleLogout = () => {
+    logout();
+    window.location.reload(); // Refresh to show login screen
+  };
+
   return (
     <Container maxWidth="lg" sx={{ pt: 4, pb: 2 }}>
+      {/* Hello Julian */}
       <Paper 
         elevation={0}
         sx={{ 
@@ -186,61 +206,18 @@ export function Dashboard({
         </Grid>
       </Paper>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Card 
-            elevation={0} 
-            sx={{ 
-              borderRadius: 2, 
-              border: '1px solid', 
-              borderColor: 'divider', 
-              height: '100%',
-              bgcolor: 'background.paper'
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h3" gutterBottom color="text.primary">
-                Site Management
-              </Typography>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                Synchronize and manage your Webflow site's content and pages
-              </Typography>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  startIcon={isRefreshing ? <CircularProgress size={20} color="inherit" /> : syncSuccess ? <CheckCircleIcon /> : <RefreshIcon />}
-                  onClick={handleRefreshPages}
-                  disabled={isRefreshing || !currentSite}
-                  sx={{ px: 3 }}
-                >
-                  {isRefreshing ? "Synchronizing..." : syncSuccess ? "Success!" : "Sync Pages"}
-                </Button>
-                
-                <Tooltip title="Debug site data">
-                  <IconButton 
-                    onClick={handleDebugSites}
-                    disabled={!currentSite}
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider',
-                      borderRadius: 1.5,
-                      p: 1,
-                      color: 'text.secondary'
-                    }}
-                  >
-                    <BugReportIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
+      {/* Page Code Manager */}
+      {currentSite && (
+        <PageFileManager siteId={currentSite.id} />
+      )}
+
+      {/* Site files */}
+      {currentSite && (
+        <FilesSection siteId={currentSite.id} />
+      )}
+
+      <Grid container spacing={3} sx={{ mt: 1 }}>
+        {/* Site Details */}
         <Grid item xs={12} md={4}>
           <Card 
             elevation={0} 
@@ -333,17 +310,112 @@ export function Dashboard({
             </CardContent>
           </Card>
         </Grid>
+        
+        {/* Site Management */}
+        <Grid item xs={12} md={8}>
+          <Card 
+            elevation={0} 
+            sx={{ 
+              borderRadius: 2, 
+              border: '1px solid', 
+              borderColor: 'divider', 
+              height: '100%',
+              bgcolor: 'background.paper'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h3" gutterBottom color="text.primary">
+                Site Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Synchronize and manage your Webflow site's content and pages
+              </Typography>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  startIcon={isRefreshing ? <CircularProgress size={20} color="inherit" /> : syncSuccess ? <CheckCircleIcon /> : <RefreshIcon />}
+                  onClick={handleRefreshPages}
+                  disabled={isRefreshing || !currentSite}
+                  sx={{ px: 3 }}
+                >
+                  {isRefreshing ? "Synchronizing..." : syncSuccess ? "Success!" : "Sync Pages"}
+                </Button>
+                
+                <Tooltip title="Debug site data">
+                  <IconButton 
+                    onClick={handleDebugSites}
+                    disabled={!currentSite}
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'divider',
+                      borderRadius: 1.5,
+                      p: 1,
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <BugReportIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Development Tools */}
+        <Grid item xs={12} mt={2}>
+          <Card 
+            elevation={0} 
+            sx={{ 
+              borderRadius: 2, 
+              border: '1px solid', 
+              borderColor: 'divider',
+              bgcolor: 'background.paper'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h3" gutterBottom color="text.primary">
+                Development Tools
+              </Typography>
+              
+              <Divider sx={{ my: 2 }} />
+
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  onClick={handleLogout}
+                  size="small"
+                >
+                  Logout
+                </Button>
+
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  onClick={handleClearClick}
+                  size="small"
+                >
+                  Clear Session
+                </Button>
+
+                <Button 
+                  variant="outlined" 
+                  onClick={logStorage}
+                  size="small"
+                  sx={{ borderColor: 'divider', color: 'text.secondary' }}
+                >
+                  Log Storage
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
-
-      {/* New: Files Section */}
-      {currentSite && (
-        <FilesSection siteId={currentSite.id} />
-      )}
-
-      {/* New: Page Code Manager */}
-      {currentSite && (
-        <PageFileManager siteId={currentSite.id} />
-      )}
     </Container>
   );
 }

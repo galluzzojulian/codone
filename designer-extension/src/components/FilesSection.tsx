@@ -20,6 +20,7 @@ import {
   IconButton,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 import { useFiles } from "../hooks/useFiles";
@@ -39,12 +40,18 @@ export function FilesSection({ siteId }: FilesSectionProps) {
     isCreating,
     updateFile,
     isUpdating,
+    deleteFile,
+    isDeleting,
   } = useFiles(siteId, sessionToken || "");
 
   // Dialog state for creating a file
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [newFileLanguage, setNewFileLanguage] = useState<FileLanguage>("html");
+
+  // Delete confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<SiteFile | null>(null);
 
   // Editor state
   const [editingFile, setEditingFile] = useState<SiteFile | null>(null);
@@ -85,6 +92,27 @@ export function FilesSection({ siteId }: FilesSectionProps) {
       setEditingCode("");
     } catch (error) {
       console.error("Error saving file:", error);
+    }
+  };
+
+  // Handle file deletion
+  const openDeleteConfirm = (file: SiteFile) => {
+    setFileToDelete(file);
+    setDeleteConfirmOpen(true);
+  };
+  
+  const closeDeleteConfirm = () => {
+    setDeleteConfirmOpen(false);
+    setFileToDelete(null);
+  };
+  
+  const handleDelete = async () => {
+    if (!fileToDelete) return;
+    try {
+      await deleteFile({ fileId: fileToDelete.id });
+      closeDeleteConfirm();
+    } catch (error) {
+      console.error("Error deleting file:", error);
     }
   };
 
@@ -267,22 +295,38 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                       <TableCell align="right" sx={{ 
                         borderBottom: index === files.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
                       }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setEditingFile(file);
-                            setEditingCode(file.code || "");
-                          }}
-                          sx={{
-                            color: "rgba(255, 255, 255, 0.7)",
-                            '&:hover': {
-                              color: "white",
-                              backgroundColor: "rgba(255, 255, 255, 0.1)"
-                            }
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setEditingFile(file);
+                              setEditingCode(file.code || "");
+                            }}
+                            sx={{
+                              color: "rgba(255, 255, 255, 0.7)",
+                              '&:hover': {
+                                color: "white",
+                                backgroundColor: "rgba(255, 255, 255, 0.1)"
+                              },
+                              mr: 1
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => openDeleteConfirm(file)}
+                            sx={{
+                              color: "rgba(255, 130, 130, 0.7)",
+                              '&:hover': {
+                                color: "#ff5252",
+                                backgroundColor: "rgba(255, 80, 80, 0.1)"
+                              }
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -460,6 +504,55 @@ export function FilesSection({ siteId }: FilesSectionProps) {
             }}
           />
         </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={closeDeleteConfirm}
+        maxWidth="xs"
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: 2,
+            bgcolor: '#292929'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontSize: "1.1rem", 
+          fontWeight: 600, 
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          p: 2.5,
+          color: "#ff5252"
+        }}>
+          Delete File
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, mt: 1 }}>
+          <Typography>
+            Are you sure you want to delete <strong>{fileToDelete?.name}</strong>? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}>
+          <Button 
+            onClick={closeDeleteConfirm}
+            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleDelete} 
+            disabled={isDeleting}
+            sx={{
+              bgcolor: '#ff5252',
+              '&:hover': {
+                bgcolor: '#ff3333'
+              }
+            }}
+          >
+            {isDeleting ? <CircularProgress size={20} /> : "Delete"}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Card>
   );

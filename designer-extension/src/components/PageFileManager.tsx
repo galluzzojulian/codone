@@ -36,6 +36,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useAuth } from "../hooks/useAuth";
 import { useFiles } from "../hooks/useFiles";
 import { usePages } from "../hooks/usePages";
+import { SiteWideCodeManager } from "./SiteWideCodeManager";
 
 interface PageFileManagerProps {
   siteId: string;
@@ -59,7 +60,11 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
   const {
     files,
     isLoading: filesLoading,
+    apiDisabled,
   } = useFiles(siteId, sessionToken || "");
+
+  // Track API attempt to prevent repeated failures
+  const [apiAttempted, setApiAttempted] = useState(false);
 
   // Selected page
   const [selectedPageId, setSelectedPageId] = useState<string | "">("");
@@ -93,11 +98,10 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
         const currentPage = await webflow.getCurrentPage();
         if (currentPage) {
           const pageId = currentPage.id;
-          console.log("🔍 Current Webflow page ID:", pageId);
           setCurrentWebflowPageId(pageId);
         }
       } catch (e) {
-        console.error("❌ Error getting current Webflow page:", e);
+        console.error("Error getting current Webflow page:", e);
       }
     }
     
@@ -106,10 +110,14 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
 
   // fetch supabase pages list once
   useEffect(() => {
+    // Skip if already attempted and API is disabled
+    if (apiAttempted && apiDisabled) return;
+
     async function fetchSbPages() {
-      if (!siteId) return;
+      if (!siteId || !sessionToken) return;
+      setApiAttempted(true);
+      
       try {
-        console.log("🔄 Fetching Supabase pages for site:", siteId);
         const res = await fetch(`${base_url}/api/pages?siteId=${siteId}`, {
           headers: {
             Authorization: `Bearer ${sessionToken}`,
@@ -117,32 +125,26 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
         });
         if (!res.ok) throw new Error("Failed to fetch supabase pages");
         const j = await res.json();
-        console.log("📄 Supabase pages raw response:", j);
         setSbPages(j.pages || []);
       } catch (e) {
-        console.error("❌ Error fetching Supabase pages:", e);
+        console.error("Error fetching Supabase pages:", e);
       }
     }
     fetchSbPages();
-  }, [siteId, base_url, sessionToken]);
+  }, [siteId, base_url, sessionToken, apiDisabled, apiAttempted]);
 
   // Build the mapping when both pages lists are loaded
   useEffect(() => {
     if (sbPages.length > 0) {
-      console.log("🔄 Building page mapping");
-      console.log("📊 Supabase pages for mapping:", sbPages);
-      
       const mapping: Record<string, string> = {};
       sbPages.forEach(p => {
         if (p.webflow_page_id) {
-          console.log(`🔗 Mapping Webflow page ${p.webflow_page_id} to Supabase ID ${p.id}`);
           mapping[p.webflow_page_id] = p.id;
         }
       });
-      console.log("🗺️ Final page mapping:", mapping);
       setPageMapping(mapping);
     }
-  }, [pages, sbPages]);
+  }, [sbPages]);
 
   // When pages fetched set default page
   useEffect(() => {
@@ -151,43 +153,27 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
       if (currentWebflowPageId) {
         const currentWebflowPage = pages.find(p => p.id === currentWebflowPageId);
         if (currentWebflowPage) {
-          console.log("📌 Automatically selecting current page:", currentWebflowPageId);
           setSelectedPageId(currentWebflowPageId);
           return;
         }
       }
       
       // Fallback: select first page
-      console.log("📌 Setting default page (fallback):", pages[0].id);
       setSelectedPageId(pages[0].id);
     }
   }, [pagesLoading, pages, selectedPageId, currentWebflowPageId]);
 
-  // Fetch page details when selectedPageId changes
+  // Fetch page details when selectedPageId changes - with better error handling and stability
   useEffect(() => {
-    if (!selectedPageId) return;
-    console.log("🔄 Selected page ID changed to:", selectedPageId);
-    
-    // The selected page ID is from Webflow but the pages in sbPages might not have a
-    // direct mapping with webflow_page_id. Let's log to find the issue.
-    console.log("📄 Webflow pages available:", pages);
-    console.log("📄 Supabase pages available:", sbPages);
+    if (!selectedPageId || !sbPages.length) return;
     
     // Use our mapping to find the correct Supabase page ID
     const sbPageId = pageMapping[selectedPageId];
-    console.log("🔍 Mapped Supabase page ID:", sbPageId);
     
     // Find the page in our sbPages list
     const sbPage = sbPageId ? sbPages.find(p => p.id === sbPageId) : null;
     
-    console.log("🔍 Found Supabase page:", sbPage);
     if (sbPage) {
-      // Debug head_files content
-      console.log("📋 head_files raw:", sbPage.head_files);
-      console.log("📋 body_files raw:", sbPage.body_files);
-      console.log("📋 Type checking: head_files is array:", Array.isArray(sbPage.head_files));
-      console.log("📋 Type checking: body_files is array:", Array.isArray(sbPage.body_files));
-      
       // Parse arrays from various possible formats
       let headIds: string[] = [];
       let bodyIds: string[] = [];
@@ -198,14 +184,18 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
           headIds = sbPage.head_files.map(id => String(id));
         } else if (typeof sbPage.head_files === 'string') {
           // Try to parse as JSON string
-          const parsed = JSON.parse(sbPage.head_files);
-          headIds = Array.isArray(parsed) ? parsed.map(id => String(id)) : [];
+          try {
+            const parsed = JSON.parse(sbPage.head_files);
+            headIds = Array.isArray(parsed) ? parsed.map(id => String(id)) : [];
+          } catch (e) {
+            console.error("Error parsing head_files JSON:", e);
+          }
         } else if (sbPage.head_files) {
           // Last resort - try to convert to array if it's truthy
           headIds = [String(sbPage.head_files)];
         }
       } catch (e) {
-        console.error("❌ Error parsing head_files:", e);
+        console.error("Error handling head_files:", e);
       }
       
       // Handle body_files - could be array, JSON string, or null
@@ -214,27 +204,36 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
           bodyIds = sbPage.body_files.map(id => String(id));
         } else if (typeof sbPage.body_files === 'string') {
           // Try to parse as JSON string
-          const parsed = JSON.parse(sbPage.body_files);
-          bodyIds = Array.isArray(parsed) ? parsed.map(id => String(id)) : [];
+          try {
+            const parsed = JSON.parse(sbPage.body_files);
+            bodyIds = Array.isArray(parsed) ? parsed.map(id => String(id)) : [];
+          } catch (e) {
+            console.error("Error parsing body_files JSON:", e);
+          }
         } else if (sbPage.body_files) {
           // Last resort - try to convert to array if it's truthy
           bodyIds = [String(sbPage.body_files)];
         }
       } catch (e) {
-        console.error("❌ Error parsing body_files:", e);
+        console.error("Error handling body_files:", e);
       }
       
-      console.log("📋 Final head IDs as strings:", headIds);
-      console.log("📋 Final body IDs as strings:", bodyIds);
+      // Only update state if the arrays changed to avoid render loops
+      const headChanged = JSON.stringify(headIds) !== JSON.stringify(headList);
+      const bodyChanged = JSON.stringify(bodyIds) !== JSON.stringify(bodyList);
       
-      setHeadList(headIds);
-      setBodyList(bodyIds);
+      if (headChanged) {
+        setHeadList(headIds);
+      }
+      
+      if (bodyChanged) {
+        setBodyList(bodyIds);
+      }
     } else {
-      console.log("❌ No matching Supabase page found, using empty arrays");
       setHeadList([]);
       setBodyList([]);
     }
-  }, [selectedPageId, sbPages, pages, pageMapping]);
+  }, [selectedPageId, sbPages, pageMapping]);
 
   // Helpers for reorder
   const moveUp = (list: string[], idx: number) => {
@@ -264,26 +263,18 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
     if (!selectedPageId) return;
     
     setSaveStatus("saving");
-    console.log("💾 Saving changes for selected page:", selectedPageId);
-    console.log("📋 Current head list (strings):", headList);
-    console.log("📋 Current body list (strings):", bodyList);
     
     // Convert IDs back to numbers for Supabase
     const headIdsForSave = headList.map(id => Number(id));
     const bodyIdsForSave = bodyList.map(id => Number(id));
-    
-    console.log("📋 Head IDs converted to numbers for save:", headIdsForSave);
-    console.log("📋 Body IDs converted to numbers for save:", bodyIdsForSave);
 
     // Use our mapping to find the correct Supabase page ID
     const sbPageId = pageMapping[selectedPageId];
     if (!sbPageId) {
-      console.error("❌ Could not find Supabase page ID for Webflow page:", selectedPageId);
+      console.error("Could not find Supabase page ID for Webflow page:", selectedPageId);
       setSaveStatus("error");
       return;
     }
-    
-    console.log("💾 Saving changes to Supabase page ID:", sbPageId);
     
     try {
       const response = await fetch(`${base_url}/api/pages/${sbPageId}`, {
@@ -297,36 +288,30 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ Failed to update page:", errorText);
+        console.error("Failed to update page:", errorText);
         setSaveStatus("error");
         return;
       }
       
       const result = await response.json();
-      console.log("✅ Update result from server:", result);
       
       // update sbPages local state to reflect changes
       const headStr = headIdsForSave.map(id => String(id));
       const bodyStr = bodyIdsForSave.map(id => String(id));
       
-      console.log("📋 Updating local state with head_files:", headStr);
-      console.log("📋 Updating local state with body_files:", bodyStr);
-      
       setSbPages(prev => {
         const newPages = prev.map(p => {
           if (p.id === sbPageId) {
-            console.log("✏️ Updating page in local state:", p.id);
             return { ...p, head_files: headStr as any, body_files: bodyStr as any };
           }
           return p;
         });
-        console.log("📄 Updated sbPages:", newPages);
         return newPages;
       });
       
       setSaveStatus("success");
     } catch (e) {
-      console.error("❌ Error saving changes:", e);
+      console.error("Error saving changes:", e);
       setSaveStatus("error");
     }
   };
@@ -455,6 +440,7 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
     
     return (
       <Paper 
+        key={`file-item-${fileId}`}
         elevation={0} 
         sx={{
           p: 1.5,
@@ -600,6 +586,33 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
     );
   }
 
+  // API error state
+  if (apiDisabled) {
+    return (
+      <Card 
+        sx={{ 
+          mt: 4, 
+          p: 4, 
+          borderRadius: 3,
+          backgroundColor: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(10px)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          textAlign: 'center'
+        }}
+      >
+        <Alert 
+          severity="warning"
+          sx={{ mb: 3, bgcolor: 'rgba(255, 152, 0, 0.1)', color: 'rgba(255, 152, 0, 0.8)' }}
+        >
+          API connection unavailable. Please check your API server.
+        </Alert>
+        <Typography color="text.secondary">
+          Page code manager functionality is disabled until API server is available.
+        </Typography>
+      </Card>
+    );
+  }
+
   return (
     <Card 
       elevation={0} 
@@ -738,12 +751,13 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
                             label="Current" 
                             size="small" 
                             sx={{ 
-                              backgroundColor: 'rgba(67, 83, 255, 0.15)', 
-                              color: '#4353ff',
+                              backgroundColor: 'rgba(67, 83, 255, 0.3)', 
+                              color: '#ffffff',
                               height: 20,
                               fontSize: '0.65rem',
-                              fontWeight: 600,
-                              border: 'none'
+                              fontWeight: 700,
+                              border: 'none',
+                              boxShadow: '0 0 5px rgba(67, 83, 255, 0.5)'
                             }} 
                           />
                         )}
@@ -819,12 +833,13 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
                       label="Current" 
                       size="small" 
                       sx={{ 
-                        backgroundColor: 'rgba(67, 83, 255, 0.15)', 
-                        color: '#4353ff',
+                        backgroundColor: 'rgba(67, 83, 255, 0.3)', 
+                        color: '#ffffff',
                         height: 20,
                         fontSize: '0.65rem',
-                        fontWeight: 600,
-                        border: 'none'
+                        fontWeight: 700,
+                        border: 'none',
+                        boxShadow: '0 0 5px rgba(67, 83, 255, 0.5)'
                       }} 
                     />
                   )}
@@ -1365,7 +1380,7 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
           </Paper>
         </Box>
         
-        {/* Site-wide section - redesigned */}
+        {/* Site-wide section - ensure all list components have keys */}
         <Box 
           sx={{ 
             mt: 3,
@@ -1375,83 +1390,60 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}
         >
-          <Box 
+          <Accordion 
+            key="site-wide-accordion"
+            defaultExpanded={true}
+            disableGutters
+            elevation={0}
             sx={{ 
-              p: 3,
-              borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: 'rgba(255, 255, 255, 0.03)'
+              backgroundColor: 'transparent',
+              border: 'none',
+              '&:before': {
+                display: 'none',
+              },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <CodeIcon sx={{ color: 'rgba(255, 255, 255, 0.7)', opacity: 0.8 }} />
-              <Typography 
-                variant="subtitle1" 
-                sx={{ 
-                  fontWeight: 600, 
-                  color: 'white',
-                  letterSpacing: '0.2px'
-                }}
-              >
-                Site-wide Code Management
-              </Typography>
-            </Box>
-            <Chip 
-              label="Coming Soon" 
-              size="small" 
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />}
               sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontWeight: 500,
-                fontSize: '0.7rem',
-                height: 22,
-                borderRadius: '4px'
-              }} 
-            />
-          </Box>
-          
-          <Box sx={{ p: 3 }}>
-            <Box 
-              sx={{ 
-                p: 4, 
-                borderRadius: 2.5,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                border: '1px dashed rgba(255, 255, 255, 0.08)'
+                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                padding: '0 24px',
+                minHeight: '64px',
+                '& .MuiAccordionSummary-content': {
+                  margin: 0,
+                },
+                outline: 'none',
+                '&.Mui-focused': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  outline: 'none',
+                },
+                '&:focus': {
+                  outline: 'none',
+                },
+                '&:focus-visible': {
+                  outline: 'none',
+                },
               }}
             >
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  textAlign: 'center'
-                }}
-              >
-                Site-wide code management will be available soon
-              </Typography>
-              
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  mt: 1.5, 
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  textAlign: 'center',
-                  maxWidth: 480,
-                  mx: 'auto'
-                }}
-              >
-                This feature will allow you to add code files that run on every page of your site.
-                If you are having issues, please send all this data in an email to juliangalluzzois@gmail.com
-              </Typography>
-            </Box>
-          </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <CodeIcon sx={{ color: 'rgba(255, 255, 255, 0.7)', opacity: 0.8 }} />
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600, 
+                    color: 'white',
+                    letterSpacing: '0.2px'
+                  }}
+                >
+                  Site-wide Code Management
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            
+            <AccordionDetails sx={{ p: 3 }}>
+              <SiteWideCodeManager siteId={siteId} />
+            </AccordionDetails>
+          </Accordion>
         </Box>
       </Box>
     </Card>

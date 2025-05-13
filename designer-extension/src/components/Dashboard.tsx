@@ -1,8 +1,23 @@
-import { Container, Typography, Button, Box, Paper, Grid, Card, CardContent, Divider, Chip, IconButton, Tooltip, CircularProgress } from "@mui/material";
+import { useState, useEffect } from "react";
+import {
+  Container,
+  Typography,
+  Button,
+  Box,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  Chip,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Alert
+} from "@mui/material";
 import { LoadingStates } from "./LoadingStates.tsx";
 import DataTable from "./DataTable";
 import { Site } from "../types/types.ts";
-import { useState, useEffect } from 'react';
 import { useAuth } from "../hooks/useAuth";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import BugReportIcon from '@mui/icons-material/BugReport';
@@ -56,6 +71,9 @@ export function Dashboard({
   const [currentSite, setCurrentSite] = useState<Site | null>(null);
   const [debugResult, setDebugResult] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "error">("checking");
+  const [devMode] = useState(import.meta.env.MODE === 'development');
   
   // Get the current site automatically on load
   useEffect(() => {
@@ -160,8 +178,64 @@ export function Dashboard({
     window.location.reload(); // Refresh to show login screen
   };
 
+  // Check API connection in development mode
+  useEffect(() => {
+    // Only check in development mode
+    if (!devMode) {
+      setApiStatus("ok");
+      return;
+    }
+    
+    const checkApi = async () => {
+      try {
+        const resp = await fetch(`${base_url}/api/health-check`, { 
+          method: 'HEAD',
+          // Quick timeout to avoid hanging
+          signal: AbortSignal.timeout(2000)
+        }).catch(() => null);
+        
+        setApiStatus(resp && resp.ok ? "ok" : "error");
+      } catch (e) {
+        setApiStatus("error");
+      }
+    };
+    
+    checkApi();
+  }, [devMode, base_url]);
+
   return (
     <Container maxWidth="lg" sx={{ pt: 4, pb: 2 }}>
+      {/* Show development API status if needed */}
+      {devMode && apiStatus === "error" && (
+        <Alert 
+          severity="warning" 
+          sx={{ 
+            mb: 4,
+            backgroundColor: 'rgba(255, 152, 0, 0.1)', 
+            color: '#f57c00',
+            borderRadius: 2,
+            border: '1px solid rgba(255, 152, 0, 0.2)',
+            '& .MuiAlert-icon': { color: '#f57c00' }
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              API Server Not Running
+            </Typography>
+            <Typography variant="body2">
+              The API server at <code>{base_url}</code> is not responding. Start your API server or the app will encounter errors.
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace', bgcolor: 'rgba(0,0,0,0.2)', p: 1, borderRadius: 1 }}>
+                # Start your API server with:
+                <br />
+                cd data-client && npm run dev
+              </Typography>
+            </Box>
+          </Box>
+        </Alert>
+      )}
+
       {/* Hello Julian */}
       <Paper 
         elevation={0}

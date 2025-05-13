@@ -61,6 +61,18 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * OPTIONS /api/supabase-sites
+ * --------------------------
+ * Handles CORS preflight requests.
+ *
+ * Response:
+ * - 200: Successfully processed OPTIONS request
+ */
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { status: 200 });
+}
+
+/**
  * POST /api/supabase-sites
  * -----------------------
  * Updates or creates site data in the Supabase 'Sites' table

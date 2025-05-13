@@ -19,12 +19,18 @@ const queryClient = new QueryClient({
   },
 });
 
+// Conditionally wrap with StrictMode only in production
+// This prevents double rendering in development which can cause issues with complex state updates
+const isDevelopment = import.meta.env.MODE === 'development';
+
+const AppWithProviders = (
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>
+);
+
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>
+  isDevelopment ? AppWithProviders : <StrictMode>{AppWithProviders}</StrictMode>
 );
 
 // Create a client

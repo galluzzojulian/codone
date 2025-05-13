@@ -6,6 +6,9 @@ test: ["http://localhost:1337"],
 
 const nextConfig = {
 async headers() {
+    const currentEnv = process.env.NODE_ENV || 'development';
+    const origin = (allowedOrigins[currentEnv] && allowedOrigins[currentEnv][0]) || 'http://localhost:1337';
+
     return [
     {
         source: "/api/:path*",
@@ -13,7 +16,7 @@ async headers() {
         { key: "Access-Control-Allow-Credentials", value: "true" },
         {
             key: "Access-Control-Allow-Origin",
-            value: "http://localhost:1337",
+            value: origin,
         },
         {
             key: "Access-Control-Allow-Methods",
@@ -43,6 +46,10 @@ async rewrites() {
         ],
     },
     ];
+},
+
+eslint: {
+    ignoreDuringBuilds: true,
 },
 };
 

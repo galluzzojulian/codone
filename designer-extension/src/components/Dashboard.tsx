@@ -217,6 +217,45 @@ export function Dashboard({
       )}
 
       <Grid container spacing={3} sx={{ mt: 1 }}>
+        {/* Site Management */}
+        <Grid item xs={12} md={8}>
+          <Card 
+            elevation={0} 
+            sx={{ 
+              borderRadius: 2, 
+              border: '1px solid', 
+              borderColor: 'divider', 
+              height: '100%',
+              bgcolor: 'background.paper'
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h3" gutterBottom color="text.primary">
+                Site Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Synchronize and manage your Webflow site's content and pages
+              </Typography>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  startIcon={isRefreshing ? <CircularProgress size={20} color="inherit" /> : syncSuccess ? <CheckCircleIcon /> : <RefreshIcon />}
+                  onClick={handleRefreshPages}
+                  disabled={isRefreshing || !currentSite}
+                  sx={{ px: 3 }}
+                >
+                  {isRefreshing ? "Synchronizing..." : syncSuccess ? "Success!" : "Sync Pages"}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        
         {/* Site Details */}
         <Grid item xs={12} md={4}>
           <Card 
@@ -273,6 +312,31 @@ export function Dashboard({
                         />
                       </Box>
                     </Grid>
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 1 }} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Tooltip title="Debug site data">
+                          <IconButton 
+                            onClick={handleDebugSites}
+                            disabled={!currentSite}
+                            sx={{ 
+                              border: '1px solid', 
+                              borderColor: 'divider',
+                              borderRadius: 1.5,
+                              p: 1,
+                              color: 'text.secondary'
+                            }}
+                          >
+                            <BugReportIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontSize: '0.75rem' }}>
+                        If you are having issues, please send all this data in an email to juliangalluzzois@gmail.com
+                      </Typography>
+                    </Grid>
                   </Grid>
                 </Box>
               ) : (
@@ -307,61 +371,6 @@ export function Dashboard({
                   </Box>
                 </Box>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        {/* Site Management */}
-        <Grid item xs={12} md={8}>
-          <Card 
-            elevation={0} 
-            sx={{ 
-              borderRadius: 2, 
-              border: '1px solid', 
-              borderColor: 'divider', 
-              height: '100%',
-              bgcolor: 'background.paper'
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h3" gutterBottom color="text.primary">
-                Site Management
-              </Typography>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                Synchronize and manage your Webflow site's content and pages
-              </Typography>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  startIcon={isRefreshing ? <CircularProgress size={20} color="inherit" /> : syncSuccess ? <CheckCircleIcon /> : <RefreshIcon />}
-                  onClick={handleRefreshPages}
-                  disabled={isRefreshing || !currentSite}
-                  sx={{ px: 3 }}
-                >
-                  {isRefreshing ? "Synchronizing..." : syncSuccess ? "Success!" : "Sync Pages"}
-                </Button>
-                
-                <Tooltip title="Debug site data">
-                  <IconButton 
-                    onClick={handleDebugSites}
-                    disabled={!currentSite}
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider',
-                      borderRadius: 1.5,
-                      p: 1,
-                      color: 'text.secondary'
-                    }}
-                  >
-                    <BugReportIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
             </CardContent>
           </Card>
         </Grid>

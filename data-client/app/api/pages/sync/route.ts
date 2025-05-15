@@ -10,6 +10,12 @@ import database from "../../../lib/utils/database";
  * This route handles the POST request to synchronize pages between Webflow and Supabase.
  * It fetches the latest pages from Webflow and updates the Supabase database accordingly.
  */
+
+// Add OPTIONS handler for CORS preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Clone the request since we need to read the body twice

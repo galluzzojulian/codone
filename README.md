@@ -1,4 +1,4 @@
-# Codone v0.4.0
+# Codone v0.7.0
 
 A Webflow Hybrid App for integrating custom code and data handling capabilities into Webflow projects. Codone provides powerful tools for:
 
@@ -6,6 +6,22 @@ A Webflow Hybrid App for integrating custom code and data handling capabilities 
 - Synchronizing pages and site data
 - Enhanced development workflows with debugging tools
 - Supabase integration for persistent data storage
+
+## 🎉 Release v0.7.0
+
+This release focuses on fixing critical data persistence issues:
+- Fixed CORS issues when saving page code changes
+- Enhanced data persistence during site reauthorization (preserves custom code)
+- Improved page name detection for better organization
+- Better error handling and debugging for sync operations
+- Fixed issues with head_code and body_code being reset during reauthorization
+
+## 🎉 Release v0.6.0
+
+This release includes:
+- Enhanced CORS configuration for more reliable API requests
+- Improved error handling for authentication flows
+- Fixed data synchronization issues between Webflow and Supabase
 
 ## 🎉 Release v0.4.0
 

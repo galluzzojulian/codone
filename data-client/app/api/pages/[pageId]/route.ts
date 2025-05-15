@@ -2,17 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import supabaseClient from "../../../lib/utils/supabase";
 import jwt from "../../../lib/utils/jwt";
 
-function makeCorsHeaders(origin?: string) {
-  return {
-    "Access-Control-Allow-Origin": origin || "*",
-    "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  } as Record<string, string>;
+// Let's use empty headers since CORS is now handled in next.config.mjs
+function getResponseHeaders() {
+  return {};
 }
 
 export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin") || undefined;
-  return NextResponse.json({}, { headers: makeCorsHeaders(origin) });
+  return NextResponse.json({});
 }
 
 /**
@@ -27,13 +23,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { pageId: string } }
 ) {
-  const origin = request.headers.get("origin") || undefined;
   try {
     const accessToken = await jwt.verifyAuth(request.clone() as NextRequest);
     if (!accessToken) {
       return NextResponse.json(
         { error: "Unauthorized" },
-        { status: 401, headers: makeCorsHeaders(origin) }
+        { status: 401 }
       );
     }
 
@@ -41,7 +36,7 @@ export async function GET(
     if (!pageId) {
       return NextResponse.json(
         { error: "pageId is required" },
-        { status: 400, headers: makeCorsHeaders(origin) }
+        { status: 400 }
       );
     }
 
@@ -54,19 +49,19 @@ export async function GET(
     if (error) {
       return NextResponse.json(
         { error: error.message },
-        { status: 500, headers: makeCorsHeaders(origin) }
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       { page: data },
-      { status: 200, headers: makeCorsHeaders(origin) }
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error retrieving page:", error);
     return NextResponse.json(
       { error: "Failed to retrieve page" },
-      { status: 500, headers: makeCorsHeaders(origin) }
+      { status: 500 }
     );
   }
 }
@@ -76,13 +71,12 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { pageId: string } }
 ) {
-  const origin = request.headers.get("origin") || undefined;
   try {
     const accessToken = await jwt.verifyAuth(request.clone() as NextRequest);
     if (!accessToken) {
       return NextResponse.json(
         { error: "Unauthorized" },
-        { status: 401, headers: makeCorsHeaders(origin) }
+        { status: 401 }
       );
     }
 
@@ -90,7 +84,7 @@ export async function PUT(
     if (!pageId) {
       return NextResponse.json(
         { error: "pageId is required" },
-        { status: 400, headers: makeCorsHeaders(origin) }
+        { status: 400 }
       );
     }
 
@@ -100,13 +94,13 @@ export async function PUT(
 
     return NextResponse.json(
       { page: updatedPage },
-      { status: 200, headers: makeCorsHeaders(origin) }
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error updating page:", error);
     return NextResponse.json(
       { error: "Failed to update page" },
-      { status: 500, headers: makeCorsHeaders(origin) }
+      { status: 500 }
     );
   }
 } 

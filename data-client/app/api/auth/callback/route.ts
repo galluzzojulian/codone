@@ -97,49 +97,64 @@ export async function GET(request: NextRequest) {
     // Store site authorizations in parallel - both in SQLite and Supabase
     const siteList = (sites?.sites ?? []) as WebflowSite[];
     if (siteList.length > 0) {
+      // First, get existing site data to preserve values during reauthorization
+      const existingSitesData = new Map();
+      
+      try {
+        // Fetch all sites that might already exist
+        const existingSites = await Promise.all(
+          siteList.map(site => supabaseClient.getSiteById(site.id))
+        );
+        
+        // Create a map of existing site data keyed by site ID
+        existingSites.forEach(site => {
+          if (site) {
+            existingSitesData.set(site.webflow_site_id, {
+              head_code: site.head_code || '',
+              body_code: site.body_code || '',
+              pages: site.pages || []
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching existing site data:", error);
+        // Continue even if there's an error fetching existing data
+      }
+
       await Promise.all([
         // Store in SQLite (existing)
         ...siteList.map((site) => db.insertSiteAuthorization(site.id, accessToken)),
         
         // Store in Supabase (new schema)
-        ...siteList.map((site) => supabaseClient.insertSite(
-          site.id,  // webflow_site_id 
-          userId,   // owner - explicitly using the userId from auth data
-          {
-            // Pre-populate with empty arrays/objects for pages and code
-            pages: [],
-            head_code: '',
-            body_code: ''
-          }
-        ))
+        ...siteList.map((site) => {
+          // Get existing site data or use defaults
+          const existingSite = existingSitesData.get(site.id);
+          
+          return supabaseClient.insertSite(
+            site.id,  // webflow_site_id 
+            userId,   // owner - explicitly using the userId from auth data
+            {
+              // Use existing data if available, otherwise use defaults
+              pages: existingSite ? existingSite.pages : [],
+              head_code: existingSite ? existingSite.head_code : '',
+              body_code: existingSite ? existingSite.body_code : ''
+            }
+          );
+        })
       ]);
       
       // After storing site information, fetch and store all pages for each site
       for (const site of siteList) {
         try {
-          // Fetch all pages for this site
-          const pagesResponse = await webflow.pages.list(site.id);
-          const pages = pagesResponse?.pages || [];
+          console.log(`Syncing pages for site ${site.id}...`);
           
-          console.log(`Fetched ${pages.length} pages for site ${site.id}`);
+          // Use the common syncPagesForSite function instead of custom logic
+          // This ensures consistent page naming between auth and manual sync
+          const syncResult = await supabaseClient.syncPagesForSite(site.id, webflow);
           
-          // Store each page in Supabase
-          if (pages.length > 0) {
-            await Promise.all(
-              pages.map((page: any) => 
-                supabaseClient.insertPage(
-                  site.id,       // webflow_site_id (foreign key to Sites table)
-                  page.id,       // webflow_page_id
-                  page.displayName || page.name || `Page ${page.id.substring(0, 6)}`,  // Try different name properties with better fallback
-                  [],            // empty head_files array
-                  []             // empty body_files array
-                )
-              )
-            );
-            console.log(`Stored ${pages.length} pages for site ${site.id} in Supabase`);
-          }
+          console.log(`Page sync result for site ${site.id}:`, syncResult);
         } catch (pageError) {
-          console.error(`Error fetching/storing pages for site ${site.id}:`, pageError);
+          console.error(`Error syncing pages for site ${site.id}:`, pageError);
           // Continue with other sites even if one fails
         }
       }

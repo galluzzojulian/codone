@@ -57,17 +57,30 @@ export async function insertSite(
     throw new Error('webflowSiteId is required');
   }
 
+  // Create the data object for upsert with proper typing
+  const siteRecord: {
+    webflow_site_id: string;
+    owner: string;
+    pages?: any[];
+    head_code?: string;
+    body_code?: string;
+  } = {
+    webflow_site_id: webflowSiteId,
+    owner
+  };
+
+  // Only include site data fields that are provided (non-null, non-undefined)
+  // This ensures we don't overwrite existing data with null values during an update
+  if (siteData.pages !== undefined) siteRecord.pages = siteData.pages;
+  if (siteData.head_code !== undefined) siteRecord.head_code = siteData.head_code;
+  if (siteData.body_code !== undefined) siteRecord.body_code = siteData.body_code;
+
   // Perform upsert operation with conflict handling on webflow_site_id
   const { data, error } = await supabase
     .from('Sites')
-    .upsert({
-      webflow_site_id: webflowSiteId,
-      owner,
-      pages: siteData.pages || null,
-      head_code: siteData.head_code || null,
-      body_code: siteData.body_code || null
-    }, {
+    .upsert(siteRecord, {
       onConflict: 'webflow_site_id',
+      // Use merge strategy to only update the fields that are provided
       ignoreDuplicates: false
     });
 
@@ -217,9 +230,35 @@ export async function syncPagesForSite(webflowSiteId: string, webflowClient: any
   const pagesResponse = await webflowClient.pages.list(webflowSiteId);
   const webflowPages = pagesResponse?.pages || [];
   
+  // Debug: Log raw API response structure 
+  console.log(`Webflow pages API raw response structure:`, {
+    hasPages: !!pagesResponse?.pages,
+    pageCount: webflowPages.length,
+    responseSample: Object.keys(pagesResponse || {})
+  });
+  
+  // If we have pages, log the first one as a sample
+  if (webflowPages.length > 0) {
+    console.log(`Sample page object from Webflow:`, 
+      JSON.stringify({
+        id: webflowPages[0].id,
+        displayName: webflowPages[0].displayName,
+        name: webflowPages[0].name,
+        slug: webflowPages[0].slug,
+        title: webflowPages[0].title,
+        allKeys: Object.keys(webflowPages[0])
+      }, null, 2)
+    );
+  }
+  
   // Get existing pages from Supabase
   const existingPages = await getPagesBySiteId(webflowSiteId);
-  const existingPageIds = new Set(existingPages.map(p => p.webflow_page_id));
+  const existingPageMap = new Map();
+  
+  // Create a map of existing pages for easier lookup
+  existingPages.forEach(page => {
+    existingPageMap.set(page.webflow_page_id, page);
+  });
   
   // Track new, updated, and unchanged pages
   const newPages = [];
@@ -237,7 +276,7 @@ export async function syncPagesForSite(webflowSiteId: string, webflowClient: any
   for (const page of webflowPages) {
     const pageName = extractPageName(page);
     
-    if (!existingPageIds.has(page.id)) {
+    if (!existingPageMap.has(page.id)) {
       // New page
       newPages.push({
         webflow_site_id: webflowSiteId,
@@ -247,12 +286,13 @@ export async function syncPagesForSite(webflowSiteId: string, webflowClient: any
         body_files: []
       });
     } else {
-      // Existing page - update name in case it changed
-      const existingPage = existingPages.find(p => p.webflow_page_id === page.id);
+      // Existing page - only update name if it changed while preserving head_files and body_files
+      const existingPage = existingPageMap.get(page.id);
       if (existingPage && existingPage.name !== pageName) {
         updatedPages.push({
           ...existingPage,
           name: pageName
+          // Existing head_files and body_files are preserved by using the spread operator
         });
       }
     }
@@ -310,25 +350,67 @@ export async function syncPagesForSite(webflowSiteId: string, webflowClient: any
  * Helper function to extract the best name from a Webflow page object
  */
 function extractPageName(page: any): string {
+  // Debug: Log page properties for troubleshooting
+  console.log(`Page ID ${page.id} properties:`, {
+    displayName: page.displayName,
+    name: page.name,
+    seoTitle: page.seoTitle,
+    title: page.title,
+    slug: page.slug,
+    keys: Object.keys(page)
+  });
+
   // Try different properties in order of preference
-  if (page.displayName && typeof page.displayName === 'string' && page.displayName.trim()) {
+  if (typeof page.displayName === 'string' && page.displayName.trim()) {
     return page.displayName.trim();
   }
   
-  if (page.name && typeof page.name === 'string' && page.name.trim()) {
+  if (typeof page.name === 'string' && page.name.trim()) {
     return page.name.trim();
   }
   
-  if (page.title && typeof page.title === 'string' && page.title.trim()) {
+  if (typeof page.title === 'string' && page.title.trim()) {
     return page.title.trim();
   }
-  
-  if (page.slug && typeof page.slug === 'string' && page.slug.trim()) {
-    return page.slug.trim().replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+
+  if (typeof page.seoTitle === 'string' && page.seoTitle.trim()) {
+    return page.seoTitle.trim();
   }
   
-  // Last resort - use the page ID
-  return `Page ${page.id.substring(0, 8)}`;
+  // Special handling for home page
+  if (page.slug === '' || page.slug === '/' || page.slug === 'index') {
+    return 'Home Page';
+  }
+
+  // For URL paths like /blog/post-title, extract the last segment
+  if (typeof page.slug === 'string' && page.slug.includes('/')) {
+    const lastSegment = page.slug.split('/').pop();
+    if (lastSegment && lastSegment.trim()) {
+      return lastSegment
+        .trim()
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (l: string) => l.toUpperCase());
+    }
+  }
+  
+  if (typeof page.slug === 'string' && page.slug.trim()) {
+    // Convert kebab-case to Title Case (e.g., "about-us" becomes "About Us")
+    return page.slug.trim()
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (l: string) => l.toUpperCase());
+  }
+  
+  // Add standard names for common page patterns if needed
+  if (page.id.includes('404')) {
+    return '404 Page';
+  }
+  
+  if (page.id.includes('not-found')) {
+    return 'Not Found Page';
+  }
+  
+  // Last resort - use a generic name with the page ID
+  return `Unnamed Page (${page.id.substring(0, 8)})`;
 }
 
 /**

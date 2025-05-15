@@ -15,7 +15,7 @@ async headers() {
         { key: "Access-Control-Allow-Credentials", value: "true" },
         {
             key: "Access-Control-Allow-Origin",
-            value: "*", // Allow any origin in development for simplicity
+            value: allowedOrigins[currentEnv]?.[0] || "*", // Use the first allowed origin or fallback to wildcard
         },
         {
             key: "Access-Control-Allow-Methods",

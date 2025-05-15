@@ -2,17 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import supabaseClient from "../../../lib/utils/supabase";
 import jwt from "../../../lib/utils/jwt";
 
-function makeCorsHeaders(origin?: string) {
-  return {
-    "Access-Control-Allow-Origin": origin || "*",
-    "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  } as Record<string, string>;
-}
-
 export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin") || undefined;
-  return NextResponse.json({}, { headers: makeCorsHeaders(origin) });
+  return NextResponse.json({});
 }
 
 /**
@@ -27,16 +18,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
-  const origin = request.headers.get("origin") || undefined;
   try {
     const accessToken = await jwt.verifyAuth(request.clone() as NextRequest);
     if (!accessToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: makeCorsHeaders(origin) });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { fileId } = params;
     if (!fileId) {
-      return NextResponse.json({ error: "fileId is required" }, { status: 400, headers: makeCorsHeaders(origin) });
+      return NextResponse.json({ error: "fileId is required" }, { status: 400 });
     }
 
     const { data, error } = await supabaseClient.client
@@ -46,13 +36,13 @@ export async function GET(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500, headers: makeCorsHeaders(origin) });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ file: data }, { status: 200, headers: makeCorsHeaders(origin) });
+    return NextResponse.json({ file: data }, { status: 200 });
   } catch (error) {
     console.error("Error retrieving file:", error);
-    return NextResponse.json({ error: "Failed to retrieve file" }, { status: 500, headers: makeCorsHeaders(origin) });
+    return NextResponse.json({ error: "Failed to retrieve file" }, { status: 500 });
   }
 }
 
@@ -61,25 +51,24 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
-  const origin = request.headers.get("origin") || undefined;
   try {
     const accessToken = await jwt.verifyAuth(request.clone() as NextRequest);
     if (!accessToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: makeCorsHeaders(origin) });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { fileId } = params;
     if (!fileId) {
-      return NextResponse.json({ error: "fileId is required" }, { status: 400, headers: makeCorsHeaders(origin) });
+      return NextResponse.json({ error: "fileId is required" }, { status: 400 });
     }
 
     const body = await request.json();
 
     const updatedFile = await supabaseClient.updateFile(fileId, body);
 
-    return NextResponse.json({ file: updatedFile }, { status: 200, headers: makeCorsHeaders(origin) });
+    return NextResponse.json({ file: updatedFile }, { status: 200 });
   } catch (error) {
     console.error("Error updating file:", error);
-    return NextResponse.json({ error: "Failed to update file" }, { status: 500, headers: makeCorsHeaders(origin) });
+    return NextResponse.json({ error: "Failed to update file" }, { status: 500 });
   }
 } 

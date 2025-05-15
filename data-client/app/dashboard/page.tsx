@@ -427,7 +427,27 @@ export default function Dashboard() {
                 </section>
               </>
             ) : (
-              <div className="text-gray-500">Site-wide code management coming soon.</div>
+              <>
+                {/* Head Section for Site */}
+                <section className="mb-8">
+                  <h4 className="font-medium mb-2">Files before the closing &lt;/head&gt; tag:</h4>
+                  <ul className="space-y-2">
+                    {files.filter(f => f.language === "js" || f.language === "css").map((file, idx) => (
+                      <li key={file.id} className="flex items-center justify-between border px-3 py-2 rounded">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-semibold uppercase text-xs bg-gray-100 px-2 py-0.5 rounded">
+                            {file.language}
+                          </span>
+                          <span>{file.name}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4 text-sm text-gray-500">
+                    To add new site-wide code files, use the Code tab in your Webflow Designer.
+                  </div>
+                </section>
+              </>
             )}
 
             <div className="mt-4 flex justify-end space-x-3">

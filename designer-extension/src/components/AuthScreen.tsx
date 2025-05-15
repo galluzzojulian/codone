@@ -11,28 +11,48 @@ import { useState } from "react";
  */
 export function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const base_url = import.meta.env.VITE_NEXTJS_API_URL;
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
   
   // Initialize the auth hook which provides methods for authentication
-  const { user } = useAuth();
+  const { user, exchangeAndVerifyIdToken } = useAuth();
 
   // Function to open the authorization popup window
-  const openAuthScreen = () => {
-    console.log("Opening auth window..."); // Debug
-    const authWindow = window.open(
-      `${base_url}/api/auth/authorize?state=webflow_designer`,
-      "_blank",
-      "width=600,height=600"
-    );
+  const openAuthScreen = async () => {
+    setIsAuthorizing(true);
+    console.log("Opening auth window...");
+    
+    try {
+      const authWindow = window.open(
+        `${base_url}/api/auth/authorize?state=webflow_designer`,
+        "_blank",
+        "width=600,height=600"
+      );
 
-    // Check if the authorization window is closed
-    const checkWindow = setInterval(() => {
-      if (authWindow?.closed) {
-        console.log("Auth window closed"); // Debug
-        clearInterval(checkWindow);
-        // The token exchange will be handled by the message event listener in App.tsx
-        onAuth();
-      }
-    }, 1000);
+      // Check if the authorization window is closed
+      const checkWindow = setInterval(async () => {
+        if (authWindow?.closed) {
+          console.log("Auth window closed, trying direct token exchange");
+          clearInterval(checkWindow);
+          
+          // Clear any previous auth data
+          localStorage.removeItem("wf_hybrid_user");
+          localStorage.removeItem("explicitly_logged_out");
+          
+          // Try to get a token directly
+          try {
+            await exchangeAndVerifyIdToken();
+            onAuth();
+          } catch (error) {
+            console.error("Failed to exchange token after auth window closed:", error);
+          }
+          
+          setIsAuthorizing(false);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error("Error opening auth window:", error);
+      setIsAuthorizing(false);
+    }
   };
 
   return (
@@ -47,8 +67,9 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
         variant="contained"
         sx={{ margin: "10px 20px" }}
         onClick={openAuthScreen}
+        disabled={isAuthorizing}
       >
-        Authorize App
+        {isAuthorizing ? "Authorizing..." : "Authorize App"}
       </Button>
     </Container>
   );

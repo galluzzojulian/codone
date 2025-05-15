@@ -158,9 +158,30 @@ export async function GET(request: NextRequest) {
             <title>Authorization Complete</title>
           </head>
           <body>
+            <h1>Authorization Complete!</h1>
+            <p>Sending message to parent window and closing...</p>
             <script>
-              window.opener.postMessage('authComplete', '*');
-              window.close();
+              // Add debug logging
+              console.log("Auth completed, sending message to opener");
+              
+              // Try-catch to better debug any issues
+              try {
+                // Check if opener exists
+                if (window.opener) {
+                  window.opener.postMessage('authComplete', '*');
+                  console.log("Message sent successfully");
+                } else {
+                  console.error("No opener window found");
+                }
+                
+                // Close after a short delay to ensure message is sent
+                setTimeout(() => {
+                  window.close();
+                }, 500);
+              } catch (error) {
+                console.error("Error sending message:", error);
+                document.body.innerHTML += "<p>Error: " + error.message + "</p>";
+              }
             </script>
           </body>
         </html>`,

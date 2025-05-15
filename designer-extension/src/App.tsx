@@ -19,6 +19,7 @@ import "./App.css";
  */
 function AppContent() {
   const [hasClickedFetch, setHasClickedFetch] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
   const { user, sessionToken, exchangeAndVerifyIdToken, logout } = useAuth();
   const { sites, isLoading, isError, error, fetchSites } = useSites(
     sessionToken,
@@ -34,6 +35,7 @@ function AppContent() {
 
     // Only run auth flow if not already checked
     if (!hasCheckedToken.current) {
+      console.log("Initial auth check");
       const storedUser = localStorage.getItem("wf_hybrid_user");
       const wasExplicitlyLoggedOut = localStorage.getItem(
         "explicitly_logged_out"
@@ -45,26 +47,29 @@ function AppContent() {
       hasCheckedToken.current = true;
     }
 
-    // Handle the authentication complete event from popup
-    const handleAuthComplete = async (event: MessageEvent) => {
-      if (event.data === "authComplete") {
-        localStorage.removeItem("explicitly_logged_out");
-        await exchangeAndVerifyIdToken();
-      }
-    };
-
-    // Add the event listener for the authentication complete event
-    window.addEventListener("message", handleAuthComplete);
-    return () => {
-      window.removeEventListener("message", handleAuthComplete);
-      hasCheckedToken.current = false;
-    };
-  }, [exchangeAndVerifyIdToken]);
+    // Debug only - log current auth state
+    console.log("Current auth state:", { 
+      user, 
+      hasToken: !!sessionToken,
+      storedUser: localStorage.getItem("wf_hybrid_user") ? "exists" : "none" 
+    });
+  }, [exchangeAndVerifyIdToken, forceUpdate, user, sessionToken]);
 
   // Handle the fetch sites button click
   const handleFetchSites = () => {
     setHasClickedFetch(true);
     fetchSites();
+  };
+
+  // Handle auth completion from the AuthScreen component
+  const handleAuthCompletion = async () => {
+    console.log("Auth completed, refreshing app state");
+    try {
+      // Force a refresh of the app state
+      setForceUpdate(prev => prev + 1);
+    } catch (error) {
+      console.error("Error in auth completion:", error);
+    }
   };
 
   return (
@@ -81,7 +86,7 @@ function AppContent() {
           setHasClickedFetch={setHasClickedFetch}
         />
       ) : (
-        <AuthScreen onAuth={() => {}} />
+        <AuthScreen onAuth={handleAuthCompletion} />
       )}
     </Box>
   );

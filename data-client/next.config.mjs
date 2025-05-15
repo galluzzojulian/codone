@@ -1,14 +1,13 @@
 const allowedOrigins = {
-development: ["http://localhost:1337"],
+development: ["http://localhost:1337", "http://localhost:5173", "http://127.0.0.1:1337", "http://127.0.0.1:5173"],
 production: ["https://673b686ea8b85674a05f21e1.webflow-ext.com"],
-test: ["http://localhost:1337"],
+test: ["http://localhost:1337", "http://localhost:5173", "http://127.0.0.1:1337", "http://127.0.0.1:5173"],
 };
 
 const nextConfig = {
 async headers() {
     const currentEnv = process.env.NODE_ENV || 'development';
-    const origin = (allowedOrigins[currentEnv] && allowedOrigins[currentEnv][0]) || 'http://localhost:1337';
-
+    
     return [
     {
         source: "/api/:path*",
@@ -16,7 +15,7 @@ async headers() {
         { key: "Access-Control-Allow-Credentials", value: "true" },
         {
             key: "Access-Control-Allow-Origin",
-            value: origin,
+            value: "*", // Allow any origin in development for simplicity
         },
         {
             key: "Access-Control-Allow-Methods",
@@ -37,13 +36,6 @@ async rewrites() {
     {
         source: "/api/:path*",
         destination: "/api/:path*",
-        has: [
-        {
-            type: "header",
-            key: "Origin",
-            value: "(?<origin>.*)",
-        },
-        ],
     },
     ];
 },

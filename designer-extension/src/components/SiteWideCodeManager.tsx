@@ -192,17 +192,25 @@ export function SiteWideCodeManager({ siteId }: SiteWideCodeManagerProps) {
           rawBodyIds = rawBodyIds.filter(id => !isNaN(id) && id !== null && id !== undefined);
           
           // Create placeholder objects with IDs
-          const headCode: ScriptInfo[] = rawHeadIds.map((id: number) => ({
-            id: String(id),
-            name: `File #${id}`,
-            location: "header"
-          }));
+          const headCode: ScriptInfo[] = rawHeadIds.map((id: number) => {
+            // Look for file in the files array to get the correct name
+            const file = files.find(f => String(f.id) === String(id));
+            return {
+              id: String(id),
+              name: file ? file.name : `File #${id}`,
+              location: "header"
+            };
+          });
           
-          const bodyCode: ScriptInfo[] = rawBodyIds.map((id: number) => ({
-            id: String(id),
-            name: `File #${id}`,
-            location: "footer"
-          }));
+          const bodyCode: ScriptInfo[] = rawBodyIds.map((id: number) => {
+            // Look for file in the files array to get the correct name  
+            const file = files.find(f => String(f.id) === String(id));
+            return {
+              id: String(id),
+              name: file ? file.name : `File #${id}`,
+              location: "footer"
+            };
+          });
           
           // Set both current and original state
           const initialState = {
@@ -250,40 +258,36 @@ export function SiteWideCodeManager({ siteId }: SiteWideCodeManagerProps) {
     // Update file names
     let hasChanges = false;
     
-    // Update head_code with file names
-    const updatedHeadCode = currentHeadCode.map(item => {
-      const fileDetails = filesLookup[item.id];
-      if (fileDetails && item.name !== fileDetails.name) {
-        hasChanges = true;
-        return {
-          ...item,
-          name: fileDetails.name
+    currentHeadCode.forEach((fileInfo, index) => {
+      const fileData = filesLookup[fileInfo.id];
+      if (fileData && fileInfo.name === `File #${fileInfo.id}`) {
+        currentHeadCode[index] = {
+          ...fileInfo,
+          name: fileData.name || `File #${fileInfo.id}`
         };
+        hasChanges = true;
       }
-      return item;
     });
     
-    // Update body_code with file names
-    const updatedBodyCode = currentBodyCode.map(item => {
-      const fileDetails = filesLookup[item.id];
-      if (fileDetails && item.name !== fileDetails.name) {
-        hasChanges = true;
-        return {
-          ...item,
-          name: fileDetails.name
+    currentBodyCode.forEach((fileInfo, index) => {
+      const fileData = filesLookup[fileInfo.id];
+      if (fileData && fileInfo.name === `File #${fileInfo.id}`) {
+        currentBodyCode[index] = {
+          ...fileInfo,
+          name: fileData.name || `File #${fileInfo.id}`
         };
+        hasChanges = true;
       }
-      return item;
     });
     
-    // Only update if something actually changed
+    // Only update state if we made changes
     if (hasChanges) {
       setSiteCode({
-        head_code: updatedHeadCode,
-        body_code: updatedBodyCode
+        head_code: currentHeadCode,
+        body_code: currentBodyCode
       });
     }
-  }, [files, filesLoading]);
+  }, [files, filesLoading, siteCode]);
   
   // Helpers for reordering
   const moveUp = (list: ScriptInfo[], idx: number) => {

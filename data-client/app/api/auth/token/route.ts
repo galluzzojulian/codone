@@ -35,7 +35,28 @@ import db from "../../../lib/utils/database";
     - Returns 401 if Site ID is invalid or unauthorized
     - Returns 401 if user verification fails
 */
+
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
+  // Add CORS headers to the response
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
   // Clone the request since we need to read the body twice
   const clonedRequest = request.clone() as NextRequest;
 
@@ -44,7 +65,10 @@ export async function POST(request: NextRequest) {
 
   // If the Access Token is not found, return a 401 Unauthorized response
   if (!accessToken) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { 
+      status: 401,
+      headers: corsHeaders
+    });
   }
 
   try {
@@ -78,7 +102,9 @@ export async function POST(request: NextRequest) {
     db.insertUserAuthorization(user.id, accessToken);
 
     // Return the Session Token and Expiration Time to the Designer Extension (client)
-    return NextResponse.json({ sessionToken, exp: expAt });
+    return NextResponse.json({ sessionToken, exp: expAt }, {
+      headers: corsHeaders
+    });
   } catch (e) {
     // If the user is not associated with the site, return a 401 Unauthorized response
     console.error("Unauthorized user", e);
@@ -86,7 +112,10 @@ export async function POST(request: NextRequest) {
       {
         error: "Error: User is not associated with authorization for this site",
       },
-      { status: 401 }
+      { 
+        status: 401,
+        headers: corsHeaders
+      }
     );
   }
 }

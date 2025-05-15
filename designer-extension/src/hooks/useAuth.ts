@@ -93,8 +93,10 @@ export function useAuth() {
     mutationFn: async (idToken: string) => {
       // Get site info from Webflow
       const siteInfo = await webflow.getSiteInfo();
+      console.log("Got site info:", siteInfo.siteId);
 
       // Exchange token with backend
+      console.log("Sending token exchange request to backend...");
       const response = await fetch(`${base_url}/api/auth/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,12 +105,15 @@ export function useAuth() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Token exchange API error:", errorData);
         throw new Error(
           `Failed to exchange token: ${JSON.stringify(errorData)}`
         );
       }
 
       const data = await response.json();
+      console.log("Token exchange API response:", data.sessionToken ? "Got session token" : "No session token in response");
+      
       if (!data.sessionToken) {
         throw new Error("No session token received");
       }
@@ -117,8 +122,15 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       try {
+        console.log("Token exchange successful, processing response...");
         // Decode the new token
         const decodedToken = jwtDecode(data.sessionToken) as DecodedToken;
+        console.log("Token decoded, user info:", 
+          decodedToken.user ? {
+            firstName: decodedToken.user.firstName,
+            email: decodedToken.user.email
+          } : "No user in token");
+          
         const userData = {
           sessionToken: data.sessionToken,
           firstName: decodedToken.user.firstName,
@@ -127,10 +139,12 @@ export function useAuth() {
         };
 
         // Update localStorage
+        console.log("Saving user data to localStorage");
         localStorage.setItem("wf_hybrid_user", JSON.stringify(userData));
         localStorage.removeItem("explicitly_logged_out");
 
         // Directly update the query data instead of invalidating
+        console.log("Updating auth state in query cache");
         queryClient.setQueryData<AuthState>(["auth"], {
           user: {
             firstName: decodedToken.user.firstName,
@@ -138,14 +152,21 @@ export function useAuth() {
           },
           sessionToken: data.sessionToken,
         });
+        
+        console.log("Auth state update complete");
       } catch (error) {
-        console.error("Error decoding token:", error);
+        console.error("Error processing token response:", error);
       }
     },
   });
 
   // Function to initiate token exchange process
   const exchangeAndVerifyIdToken = async () => {
+    console.log("Starting token exchange process...");
+    
+    // Clear existing auth data to ensure a fresh start
+    localStorage.removeItem("explicitly_logged_out");
+    
     // Check if we already have a valid session token
     const storedUser = localStorage.getItem("wf_hybrid_user");
     if (storedUser) {
@@ -154,17 +175,36 @@ export function useAuth() {
         if (userData.sessionToken) {
           const decodedToken = jwtDecode(userData.sessionToken) as DecodedToken;
           if (decodedToken.exp * 1000 > Date.now()) {
-            return;
+            console.log("Found valid token in localStorage, using it");
+            // Refresh query cache with existing token
+            queryClient.setQueryData<AuthState>(["auth"], {
+              user: {
+                firstName: decodedToken.user.firstName,
+                email: decodedToken.user.email,
+              },
+              sessionToken: userData.sessionToken,
+            });
+            // Force a refresh of the query
+            queryClient.invalidateQueries({ queryKey: ["auth"] });
+            return userData.sessionToken;
+          } else {
+            console.log("Stored token has expired, getting new one");
+            // Clear expired token
+            localStorage.removeItem("wf_hybrid_user");
           }
         }
       } catch (error) {
         console.error("Error checking stored token:", error);
+        // Clear invalid data
+        localStorage.removeItem("wf_hybrid_user");
       }
+    } else {
+      console.log("No stored user found in localStorage");
     }
 
     if (isExchangingToken.current) {
       console.log("Token exchange already in progress");
-      return;
+      return "";
     }
 
     try {
@@ -173,7 +213,9 @@ export function useAuth() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Get new ID token from Webflow
+      console.log("Getting ID token from Webflow...");
       const idToken = await webflow.getIdToken();
+      console.log("ID token received:", idToken ? "Token received" : "No token received");
 
       // Validate token format
       if (!idToken || typeof idToken !== "string" || !idToken.trim()) {
@@ -181,11 +223,19 @@ export function useAuth() {
       }
 
       // Exchange token using mutation
-      await tokenMutation.mutateAsync(idToken);
+      console.log("Exchanging token with backend...");
+      const response = await tokenMutation.mutateAsync(idToken);
+      console.log("Token exchange completed successfully");
+      
+      // Force a refresh of the query to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      
+      return response.sessionToken;
     } catch (error) {
       console.error("Detailed error in token exchange:", error);
       // Clear storage on error to force re-auth
       localStorage.removeItem("wf_hybrid_user");
+      return "";
     } finally {
       isExchangingToken.current = false;
     }

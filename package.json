@@ -1,6 +1,6 @@
 {
   "name": "codone",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "description": "A Webflow Hybrid App for integrating custom code and data handling capabilities",
   "main": "index.js",
   "scripts": {

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { WebflowClient } from "webflow-api";
 import supabaseClient from "../../../lib/utils/supabase";
 import jwt from "../../../lib/utils/jwt";
+import { ScriptController } from "../../../lib/controllers/scriptControllers";
+import { registerCodeLoader } from "../../../lib/utils/codeLoaderUtils";
 
 // Let's use empty headers since CORS is now handled in next.config.mjs
 function getResponseHeaders() {
@@ -89,8 +92,64 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const { head_files, body_files } = body;
 
+    // Update page in Supabase
     const updatedPage = await supabaseClient.updatePage(pageId, body);
+
+    // If we have files to register scripts for
+    if ((head_files && head_files.length > 0) || (body_files && body_files.length > 0)) {
+      try {
+        // Get page details including Webflow IDs
+        const { data: page } = await supabaseClient.client
+          .from("Pages")
+          .select("webflow_page_id, webflow_site_id")
+          .eq("id", pageId)
+          .single();
+
+        if (page) {
+          // Initialize Webflow client and script controller
+          const webflow = new WebflowClient({ accessToken });
+          const scriptController = new ScriptController(webflow);
+
+          // Register loader scripts
+          const loaderResults = await registerCodeLoader({
+            scriptController,
+            pageId,
+            webflowPageId: page.webflow_page_id,
+            webflowSiteId: page.webflow_site_id,
+            headFiles: head_files || [],
+            bodyFiles: body_files || [],
+            supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+            supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+          });
+
+          return NextResponse.json(
+            { 
+              page: updatedPage,
+              codeLoader: {
+                registered: true,
+                results: loaderResults
+              }
+            },
+            { status: 200 }
+          );
+        }
+      } catch (error) {
+        console.error("Error registering code loader:", error);
+        // Still return success for the page update, just log the script registration error
+        return NextResponse.json(
+          { 
+            page: updatedPage,
+            codeLoader: {
+              registered: false,
+              error: error instanceof Error ? error.message : String(error)
+            }
+          },
+          { status: 200 }
+        );
+      }
+    }
 
     return NextResponse.json(
       { page: updatedPage },

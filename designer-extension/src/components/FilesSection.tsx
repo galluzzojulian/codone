@@ -27,10 +27,16 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import SearchIcon from "@mui/icons-material/Search";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { useFiles } from "../hooks/useFiles";
 import { FileLanguage, SiteFile } from "../types/types";
 import { useAuth } from "../hooks/useAuth";
 import { MonacoCodeEditor } from "./MonacoCodeEditor";
+
+// Define sort types and directions
+type SortField = "name" | "language" | "created_at" | null;
+type SortDirection = "asc" | "desc" | null;
 
 interface FilesSectionProps {
   siteId: string;
@@ -65,6 +71,10 @@ export function FilesSection({ siteId }: FilesSectionProps) {
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [languageFilter, setLanguageFilter] = useState<FileLanguage | "all">("all");
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
   const openCreate = () => setIsCreateOpen(true);
   const closeCreate = () => setIsCreateOpen(false);
@@ -125,14 +135,74 @@ export function FilesSection({ siteId }: FilesSectionProps) {
     }
   };
 
+  // Handle sorting
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Cycle through: asc -> desc -> null
+      if (sortDirection === "asc") {
+        setSortDirection("desc");
+      } else if (sortDirection === "desc") {
+        setSortDirection(null);
+        setSortField(null);
+      } else {
+        setSortDirection("asc");
+      }
+    } else {
+      // Set new sort field and start with ascending
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+  
+  // Get sort icon for a column
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return null;
+    
+    return sortDirection === "asc" ? (
+      <ArrowUpwardIcon fontSize="small" sx={{ fontSize: '0.8rem', ml: 0.5 }} />
+    ) : sortDirection === "desc" ? (
+      <ArrowDownwardIcon fontSize="small" sx={{ fontSize: '0.8rem', ml: 0.5 }} />
+    ) : null;
+  };
+
   const languageOptions: FileLanguage[] = ["html", "css", "js"];
 
   // Filter files based on search query and language filter
-  const filteredFiles = files.filter(file => {
+  let filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLanguage = languageFilter === "all" || file.language === languageFilter;
     return matchesSearch && matchesLanguage;
   });
+  
+  // Sort files if sort field is set
+  if (sortField && sortDirection) {
+    filteredFiles = [...filteredFiles].sort((a, b) => {
+      let aValue: any = a[sortField as keyof SiteFile];
+      let bValue: any = b[sortField as keyof SiteFile];
+      
+      // Handle special case for date sorting
+      if (sortField === 'created_at') {
+        aValue = new Date(aValue as string).getTime();
+        bValue = new Date(bValue as string).getTime();
+      }
+      
+      // Handle string comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue) 
+          : bValue.localeCompare(aValue);
+      }
+      
+      // Handle number comparison (e.g., dates converted to timestamps)
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' 
+          ? aValue - bValue 
+          : bValue - aValue;
+      }
+      
+      return 0;
+    });
+  }
 
   return (
     <Card
@@ -283,32 +353,62 @@ export function FilesSection({ siteId }: FilesSectionProps) {
               }}>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: "rgba(255, 255, 255, 0.03)" }}>
-                    <TableCell sx={{ 
-                      fontWeight: 600, 
-                      color: "rgba(255, 255, 255, 0.7)", 
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                      fontSize: "0.8rem",
-                      width: "40%"
-                    }}>
-                      Name
+                    <TableCell 
+                      onClick={() => handleSort("name")}
+                      sx={{ 
+                        fontWeight: 600, 
+                        color: "rgba(255, 255, 255, 0.7)", 
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                        fontSize: "0.8rem",
+                        width: "40%",
+                        cursor: "pointer",
+                        userSelect: "none",
+                        '&:hover': {
+                          color: "white"
+                        },
+                        display: "flex",
+                        alignItems: "center"
+                      }}
+                    >
+                      Name {getSortIcon("name")}
                     </TableCell>
-                    <TableCell sx={{ 
-                      fontWeight: 600, 
-                      color: "rgba(255, 255, 255, 0.7)", 
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                      fontSize: "0.8rem",
-                      width: "20%"
-                    }}>
-                      Language
+                    <TableCell 
+                      onClick={() => handleSort("language")}
+                      sx={{ 
+                        fontWeight: 600, 
+                        color: "rgba(255, 255, 255, 0.7)", 
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                        fontSize: "0.8rem",
+                        width: "20%",
+                        cursor: "pointer",
+                        userSelect: "none",
+                        '&:hover': {
+                          color: "white"
+                        },
+                        display: "flex",
+                        alignItems: "center"
+                      }}
+                    >
+                      Language {getSortIcon("language")}
                     </TableCell>
-                    <TableCell sx={{ 
-                      fontWeight: 600, 
-                      color: "rgba(255, 255, 255, 0.7)", 
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                      fontSize: "0.8rem",
-                      width: "30%"
-                    }}>
-                      Created
+                    <TableCell 
+                      onClick={() => handleSort("created_at")}
+                      sx={{ 
+                        fontWeight: 600, 
+                        color: "rgba(255, 255, 255, 0.7)", 
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                        fontSize: "0.8rem",
+                        width: "30%",
+                        cursor: "pointer",
+                        userSelect: "none",
+                        '&:hover': {
+                          color: "white"
+                        },
+                        display: "flex",
+                        alignItems: "center"
+                      }}
+                    >
+                      Created {getSortIcon("created_at")}
                     </TableCell>
                     <TableCell align="right" sx={{ 
                       fontWeight: 600, 

@@ -18,10 +18,15 @@ import {
   MenuItem,
   CircularProgress,
   IconButton,
+  InputAdornment,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
+import SearchIcon from "@mui/icons-material/Search";
 import { useFiles } from "../hooks/useFiles";
 import { FileLanguage, SiteFile } from "../types/types";
 import { useAuth } from "../hooks/useAuth";
@@ -56,6 +61,10 @@ export function FilesSection({ siteId }: FilesSectionProps) {
   // Editor state
   const [editingFile, setEditingFile] = useState<SiteFile | null>(null);
   const [editingCode, setEditingCode] = useState<string>("");
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [languageFilter, setLanguageFilter] = useState<FileLanguage | "all">("all");
 
   const openCreate = () => setIsCreateOpen(true);
   const closeCreate = () => setIsCreateOpen(false);
@@ -118,6 +127,13 @@ export function FilesSection({ siteId }: FilesSectionProps) {
 
   const languageOptions: FileLanguage[] = ["html", "css", "js"];
 
+  // Filter files based on search query and language filter
+  const filteredFiles = files.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLanguage = languageFilter === "all" || file.language === languageFilter;
+    return matchesSearch && matchesLanguage;
+  });
+
   return (
     <Card
       elevation={0}
@@ -158,12 +174,77 @@ export function FilesSection({ siteId }: FilesSectionProps) {
           </Box>
         </Box>
 
+        {/* Search and Filter Section */}
+        <Box sx={{ 
+          p: 3, 
+          display: 'flex', 
+          gap: 2, 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          bgcolor: 'rgba(255, 255, 255, 0.02)'
+        }}>
+          <TextField
+            size="small"
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                '& fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#4353ff',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: 'white',
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <Select
+              value={languageFilter}
+              onChange={(e) => setLanguageFilter(e.target.value as FileLanguage | "all")}
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                color: 'white',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#4353ff',
+                },
+              }}
+            >
+              <MenuItem value="all">All Languages</MenuItem>
+              <MenuItem value="html">HTML</MenuItem>
+              <MenuItem value="css">CSS</MenuItem>
+              <MenuItem value="js">JavaScript</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
         <Box sx={{ p: 3 }}>
           {isLoading ? (
             <Box sx={{ textAlign: "center", py: 6 }}>
               <CircularProgress size={24} />
             </Box>
-          ) : files.length === 0 ? (
+          ) : filteredFiles.length === 0 ? (
             <Box sx={{ 
               textAlign: "center", 
               py: 6, 
@@ -171,9 +252,15 @@ export function FilesSection({ siteId }: FilesSectionProps) {
               borderRadius: 2,
               border: "1px dashed rgba(255, 255, 255, 0.15)"
             }}>
-              <Typography color="text.secondary">No files found for this site.</Typography>
+              <Typography color="text.secondary">
+                {files.length === 0 
+                  ? "No files found for this site."
+                  : "No files match your search criteria."}
+              </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Click "New File" to create your first file.
+                {files.length === 0 
+                  ? "Click \"New File\" to create your first file."
+                  : "Try adjusting your search or filter."}
               </Typography>
             </Box>
           ) : (
@@ -235,7 +322,7 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {files.map((file, index) => (
+                  {filteredFiles.map((file, index) => (
                     <TableRow 
                       key={file.id} 
                       hover
@@ -251,7 +338,7 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                           py: 1.5, 
                           color: "white",
                           fontWeight: 500,
-                          borderBottom: index === files.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)",
+                          borderBottom: index === filteredFiles.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)",
                           overflow: "hidden",
                           textOverflow: "ellipsis"
                         }}
@@ -260,7 +347,7 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                       </TableCell>
                       <TableCell sx={{ 
                         py: 1.5,
-                        borderBottom: index === files.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
+                        borderBottom: index === filteredFiles.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
                       }}>
                         <Box sx={{ 
                           bgcolor: file.language === 'html' 
@@ -288,12 +375,12 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                         py: 1.5, 
                         color: "rgba(255, 255, 255, 0.6)",
                         fontSize: "0.85rem",
-                        borderBottom: index === files.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
+                        borderBottom: index === filteredFiles.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
                       }}>
                         {new Date(file.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell align="right" sx={{ 
-                        borderBottom: index === files.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
+                        borderBottom: index === filteredFiles.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
                       }}>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <IconButton

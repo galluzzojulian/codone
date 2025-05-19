@@ -22,6 +22,7 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Tooltip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -29,10 +30,12 @@ import SaveIcon from "@mui/icons-material/Save";
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import PagesIcon from "@mui/icons-material/Layers";
 import { useFiles } from "../hooks/useFiles";
 import { FileLanguage, SiteFile } from "../types/types";
 import { useAuth } from "../hooks/useAuth";
 import { MonacoCodeEditor } from "./MonacoCodeEditor";
+import { FilePagesModal } from "./FilePagesModal";
 
 // Define sort types and directions
 type SortField = "name" | "language" | "created_at" | null;
@@ -75,6 +78,10 @@ export function FilesSection({ siteId }: FilesSectionProps) {
   // Sorting state
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
+  // New state for file pages modal
+  const [filePagesModalOpen, setFilePagesModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<SiteFile | null>(null);
 
   const openCreate = () => setIsCreateOpen(true);
   const closeCreate = () => setIsCreateOpen(false);
@@ -203,6 +210,12 @@ export function FilesSection({ siteId }: FilesSectionProps) {
       return 0;
     });
   }
+
+  // Open the file pages modal
+  const handleOpenFilePagesModal = (file: SiteFile) => {
+    setSelectedFile(file);
+    setFilePagesModalOpen(true);
+  };
 
   return (
     <Card
@@ -365,12 +378,12 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                         userSelect: "none",
                         '&:hover': {
                           color: "white"
-                        },
-                        display: "flex",
-                        alignItems: "center"
+                        }
                       }}
                     >
-                      Name {getSortIcon("name")}
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        Name {getSortIcon("name")}
+                      </Box>
                     </TableCell>
                     <TableCell 
                       onClick={() => handleSort("language")}
@@ -384,12 +397,12 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                         userSelect: "none",
                         '&:hover': {
                           color: "white"
-                        },
-                        display: "flex",
-                        alignItems: "center"
+                        }
                       }}
                     >
-                      Language {getSortIcon("language")}
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        Language {getSortIcon("language")}
+                      </Box>
                     </TableCell>
                     <TableCell 
                       onClick={() => handleSort("created_at")}
@@ -403,12 +416,12 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                         userSelect: "none",
                         '&:hover': {
                           color: "white"
-                        },
-                        display: "flex",
-                        alignItems: "center"
+                        }
                       }}
                     >
-                      Created {getSortIcon("created_at")}
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        Created {getSortIcon("created_at")}
+                      </Box>
                     </TableCell>
                     <TableCell align="right" sx={{ 
                       fontWeight: 600, 
@@ -483,36 +496,59 @@ export function FilesSection({ siteId }: FilesSectionProps) {
                         borderBottom: index === filteredFiles.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.05)"
                       }}>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setEditingFile(file);
-                              setEditingCode(file.code || "");
-                            }}
-                            sx={{
-                              color: "rgba(255, 255, 255, 0.7)",
-                              '&:hover': {
-                                color: "white",
-                                backgroundColor: "rgba(255, 255, 255, 0.1)"
-                              },
-                              mr: 1
-                            }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => openDeleteConfirm(file)}
-                            sx={{
-                              color: "rgba(255, 130, 130, 0.7)",
-                              '&:hover': {
-                                color: "#ff5252",
-                                backgroundColor: "rgba(255, 80, 80, 0.1)"
-                              }
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                          <Tooltip title="Edit file">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingFile(file);
+                                setEditingCode(file.code || "");
+                              }}
+                              sx={{
+                                color: "rgba(255, 255, 255, 0.7)",
+                                '&:hover': {
+                                  color: "white",
+                                  backgroundColor: "rgba(255, 255, 255, 0.1)"
+                                },
+                                mr: 1,
+                                padding: '4px'
+                              }}
+                            >
+                              <EditIcon sx={{ fontSize: '1rem' }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="View pages using this file">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenFilePagesModal(file)}
+                              sx={{
+                                color: "rgba(115, 175, 255, 0.7)",
+                                '&:hover': {
+                                  color: "#4353ff",
+                                  backgroundColor: "rgba(67, 83, 255, 0.1)"
+                                },
+                                mr: 1,
+                                padding: '4px'
+                              }}
+                            >
+                              <PagesIcon sx={{ fontSize: '1rem' }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete file">
+                            <IconButton
+                              size="small"
+                              onClick={() => openDeleteConfirm(file)}
+                              sx={{
+                                color: "rgba(255, 130, 130, 0.7)",
+                                '&:hover': {
+                                  color: "#ff5252",
+                                  backgroundColor: "rgba(255, 80, 80, 0.1)"
+                                },
+                                padding: '4px'
+                              }}
+                            >
+                              <DeleteIcon sx={{ fontSize: '1rem' }} />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -732,6 +768,15 @@ export function FilesSection({ siteId }: FilesSectionProps) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* File Pages Modal */}
+      <FilePagesModal 
+        open={filePagesModalOpen}
+        onClose={() => setFilePagesModalOpen(false)}
+        file={selectedFile}
+        siteId={siteId}
+        sessionToken={sessionToken || ""}
+      />
     </Card>
   );
 } 

@@ -158,6 +158,17 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
       // Update local state
       setPages(prev => prev.filter(p => !(p.id === pageId && p.location === location)));
       
+      // Dispatch a custom event to notify other components about this change
+      const pageUpdateEvent = new CustomEvent('page-files-updated', { 
+        detail: { 
+          pageId: page.webflow_page_id,
+          sbPageId: pageId,
+          location,
+          fileId
+        } 
+      });
+      document.dispatchEvent(pageUpdateEvent);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error removing file from page:", err);

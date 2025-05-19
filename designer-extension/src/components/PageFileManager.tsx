@@ -132,6 +132,76 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
     fetchSbPages();
   }, [siteId, base_url, sessionToken, apiDisabled, apiAttempted]);
 
+  // Listen for page-files-updated events
+  useEffect(() => {
+    const handlePageFilesUpdated = (event: any) => {
+      const { pageId, fileId, location } = event.detail;
+      
+      // Only update if the event is for the currently selected page
+      if (pageId === selectedPageId) {
+        if (location === 'head') {
+          setHeadList(prev => prev.filter(id => id !== String(fileId)));
+        } else if (location === 'body') {
+          setBodyList(prev => prev.filter(id => id !== String(fileId)));
+        }
+        
+        // Also update the sbPages state to keep it in sync
+        setSbPages(prev => {
+          return prev.map(page => {
+            if (page.webflow_page_id === pageId) {
+              const updatedPage = { ...page };
+              
+              if (location === 'head') {
+                // Handle different types of head_files
+                let headFiles = [];
+                if (Array.isArray(page.head_files)) {
+                  headFiles = page.head_files.filter(id => String(id) !== String(fileId));
+                } else if (typeof page.head_files === 'string') {
+                  try {
+                    const parsed = JSON.parse(page.head_files);
+                    headFiles = Array.isArray(parsed) 
+                      ? parsed.filter(id => String(id) !== String(fileId))
+                      : [];
+                  } catch (e) {
+                    headFiles = [];
+                  }
+                }
+                updatedPage.head_files = headFiles;
+              } else if (location === 'body') {
+                // Handle different types of body_files
+                let bodyFiles = [];
+                if (Array.isArray(page.body_files)) {
+                  bodyFiles = page.body_files.filter(id => String(id) !== String(fileId));
+                } else if (typeof page.body_files === 'string') {
+                  try {
+                    const parsed = JSON.parse(page.body_files);
+                    bodyFiles = Array.isArray(parsed) 
+                      ? parsed.filter(id => String(id) !== String(fileId))
+                      : [];
+                  } catch (e) {
+                    bodyFiles = [];
+                  }
+                }
+                updatedPage.body_files = bodyFiles;
+              }
+              
+              return updatedPage;
+            }
+            return page;
+          });
+        });
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('page-files-updated', handlePageFilesUpdated);
+    
+    // Remove event listener on cleanup
+    return () => {
+      document.removeEventListener('page-files-updated', handlePageFilesUpdated);
+    };
+  }, [selectedPageId]);
+
   // Build the mapping when both pages lists are loaded
   useEffect(() => {
     if (sbPages.length > 0) {

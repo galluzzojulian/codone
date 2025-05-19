@@ -15,11 +15,11 @@
 
 a {
   font-weight: 500;
-  color: #4353ff;
+  color: #006acc;
   text-decoration: inherit;
 }
 a:hover {
-  color: #6b77ff;
+  color: #0088ff;
 }
 
 body {
@@ -46,9 +46,9 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #4353ff;
+  border-color: #006acc;
 }
 button:focus,
 button:focus-visible {
-  outline: 2px auto #4353ff;
+  outline: 2px auto #006acc;
 }

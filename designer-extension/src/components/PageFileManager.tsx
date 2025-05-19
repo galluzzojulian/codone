@@ -745,18 +745,18 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
               disabled={isSaveDisabled}
               startIcon={saveStatus === "saving" ? <CircularProgress size={16} /> : <SaveIcon />}
               sx={{
-                backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.1)' : '#4353ff',
+                backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.1)' : '#006acc',
                 color: isSaveDisabled ? 'rgba(255, 255, 255, 0.5)' : 'white',
-                py: 1,
-                px: 2.5,
+                py: 0.8,
+                px: 2,
                 fontWeight: 500,
                 textTransform: 'none',
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
                 borderRadius: 1.5,
-                boxShadow: 'none',
+                boxShadow: isSaveDisabled ? 'none' : '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
                 '&:hover': {
-                  backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.15)' : '#3444F0',
-                  boxShadow: isSaveDisabled ? 'none' : `0 4px 12px ${alpha('#4353ff', 0.3)}`
+                  backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.15)' : '#0088ff',
+                  boxShadow: isSaveDisabled ? 'none' : '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
                 },
                 '&.Mui-disabled': {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',

@@ -180,6 +180,9 @@ export function SiteTab({
           variant="contained"
           onClick={() => handleApplyCode("header")}
           disabled={!selectedScript}
+          sx={{
+            boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset'
+          }}
         >
           Apply to Header
         </Button>
@@ -187,6 +190,9 @@ export function SiteTab({
           variant="contained"
           onClick={() => handleApplyCode("footer")}
           disabled={!selectedScript}
+          sx={{
+            boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset'
+          }}
         >
           Apply to Footer
         </Button>

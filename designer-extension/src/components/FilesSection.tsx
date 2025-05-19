@@ -244,12 +244,15 @@ export function FilesSection({ siteId }: FilesSectionProps) {
               onClick={openCreate} 
               disabled={isCreating}
               sx={{
-                bgcolor: '#4353ff',
+                bgcolor: '#006acc',
                 '&:hover': {
-                  bgcolor: '#3444F0'
+                  bgcolor: '#0088ff'
                 },
                 fontWeight: 500,
-                px: 2
+                px: 1.8,
+                py: 0.8,
+                fontSize: '0.85rem',
+                boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset'
               }}
             >
               New File

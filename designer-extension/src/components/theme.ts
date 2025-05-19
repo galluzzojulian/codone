@@ -4,9 +4,9 @@ const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#4353ff', // Webflow primary blue
-      light: '#6b77ff',
-      dark: '#3a47d9',
+      main: '#006acc', // Updated primary blue
+      light: '#0088ff',
+      dark: '#004f99',
       contrastText: '#ffffff',
     },
     secondary: {
@@ -83,23 +83,28 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          boxShadow: 'none',
+          boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
           fontWeight: 500,
-          padding: '8px 16px',
+          padding: '6px 14px', // Reduced padding for smaller buttons
+          fontSize: '0.85rem', // Smaller font size
           '&:hover': {
-            boxShadow: 'none',
+            boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
           },
         },
         containedPrimary: {
+          boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
           '&:hover': {
-            backgroundColor: '#6b77ff',
+            backgroundColor: '#0088ff', // Adjusted lighter blue
+            boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
           },
         },
         outlinedPrimary: {
           borderColor: 'rgba(255, 255, 255, 0.15)',
+          boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
           '&:hover': {
-            backgroundColor: 'rgba(67, 83, 255, 0.15)',
-            borderColor: '#4353ff',
+            backgroundColor: 'rgba(0, 106, 204, 0.15)', // Adjusted background hover color
+            borderColor: '#006acc', // Updated border color
+            boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
           },
         },
       },

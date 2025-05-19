@@ -713,17 +713,18 @@ export function SiteWideCodeManager({ siteId }: SiteWideCodeManagerProps) {
               disabled={isSaveDisabled}
               startIcon={saveStatus === "saving" ? <CircularProgress size={16} /> : <SaveIcon />}
               sx={{
-                backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.1)' : '#4353ff',
+                backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.1)' : '#006acc',
                 color: isSaveDisabled ? 'rgba(255, 255, 255, 0.5)' : 'white',
-                py: 0.75,
-                px: 2,
+                py: 0.6,
+                px: 1.8,
                 fontWeight: 500,
                 textTransform: 'none',
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
                 borderRadius: 1.5,
-                boxShadow: 'none',
+                boxShadow: isSaveDisabled ? 'none' : '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
                 '&:hover': {
-                  backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.15)' : '#3444F0',
+                  backgroundColor: isSaveDisabled ? 'rgba(255, 255, 255, 0.15)' : '#0088ff',
+                  boxShadow: isSaveDisabled ? 'none' : '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset',
                 },
                 '&.Mui-disabled': {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',

@@ -317,11 +317,16 @@ export function Dashboard({
                 <Button
                   variant="contained"
                   color="primary"
-                  size="large"
+                  size="medium"
                   startIcon={isRefreshing ? <CircularProgress size={20} color="inherit" /> : syncSuccess ? <CheckCircleIcon /> : <RefreshIcon />}
                   onClick={handleRefreshPages}
                   disabled={isRefreshing || !currentSite}
-                  sx={{ px: 3 }}
+                  sx={{ 
+                    px: 2.5,
+                    py: 0.8,
+                    fontSize: '0.85rem',
+                    boxShadow: '0px 0.5px 1px 0px rgba(0, 0, 0, 0.8),0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.20) inset'
+                  }}
                 >
                   {isRefreshing ? "Synchronizing..." : syncSuccess ? "Success!" : "Sync Pages"}
                 </Button>

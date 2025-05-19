@@ -4,6 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import { defineConfig, Plugin } from 'vite';
 
+// Add this for Monaco Editor
+import { resolve } from 'path';
+
 const wfDesignerExtensionPlugin = (watchPatterns: string[] = []): Plugin => {
   let webflowHTML = '';
   const configPath = path.join('./webflow.json');
@@ -100,5 +103,21 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'monaco-editor': ['monaco-editor'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
+  },
+  resolve: {
+    alias: {
+      // This is needed for Monaco editor worker files
+      'monaco-editor': resolve(__dirname, 'node_modules/monaco-editor'),
+    },
   },
 });

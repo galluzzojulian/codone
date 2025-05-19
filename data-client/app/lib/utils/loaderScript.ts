@@ -3,7 +3,7 @@
  * and inject it into the current page.
  */
 export interface LoaderConfig {
-  id: string;
+  id: string | number;
   type: 'page' | 'site';
   location: 'head' | 'body';
   supabaseUrl: string;
@@ -11,9 +11,24 @@ export interface LoaderConfig {
 }
 
 export const generateLoaderScript = (config: LoaderConfig): string => {
+  // Convert the ID to a number if it's numeric, otherwise keep it as a string
+  const isNumericId = !isNaN(Number(config.id));
+  
+  // Debug log to troubleshoot ID issues
+  console.log(`generateLoaderScript called with:`, {
+    id: config.id,
+    type: config.id.constructor.name,
+    isNumeric: isNumericId,
+    convertedId: isNumericId ? config.id : `"${config.id}"`,
+    supabaseUrl: config.supabaseUrl
+  });
+  
+  // Ensure we're using the correct ID format
+  const idValue = isNumericId ? Number(config.id) : `"${config.id}"`;
+  
   // Minified version of the loader script to stay under 2000 characters
   return `(function(){
-const c={id:"${config.id}",type:"${config.type}",location:"${config.location}"};
+const c={id:${idValue},type:"${config.type}",location:"${config.location}"};
 const u="${config.supabaseUrl}";
 const k="${config.supabaseKey}";
 fetch(u+"/functions/v1/code-loader",{

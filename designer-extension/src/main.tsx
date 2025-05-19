@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initMonaco } from "./monaco-worker";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,8 +30,9 @@ const AppWithProviders = (
   </QueryClientProvider>
 );
 
+// Initialize Monaco editor
+initMonaco();
+
 createRoot(document.getElementById("root")!).render(
   isDevelopment ? AppWithProviders : <StrictMode>{AppWithProviders}</StrictMode>
 );
-
-// Create a client

@@ -9,7 +9,7 @@ async function registerScriptWithRetry(
   webflowSiteId: string,
   displayName: string,
   sourceCode: string,
-  maxAttempts = 5
+  maxAttempts = 50
 ): Promise<{success: boolean; scriptId: string | null; error: string | null}> {
   let attempt = 0;
   let baseVersion = "1.0";
@@ -50,12 +50,11 @@ async function registerScriptWithRetry(
 }
 
 /**
- * Register and apply code loader scripts when page files are updated
+ * Register and apply site-wide code loader scripts
  */
-export async function registerCodeLoader({
+export async function registerSiteCodeLoader({
   scriptController,
-  pageId,
-  webflowPageId,
+  siteId,
   webflowSiteId,
   headFiles,
   bodyFiles,
@@ -63,8 +62,7 @@ export async function registerCodeLoader({
   supabaseKey
 }: {
   scriptController: ScriptController;
-  pageId: string;
-  webflowPageId: string;
+  siteId: string | number;
   webflowSiteId: string;
   headFiles: string[];
   bodyFiles: string[];
@@ -76,22 +74,42 @@ export async function registerCodeLoader({
     body: { registered: false, scriptId: null as string | null, error: null as string | null }
   };
   
-  // Create alphanumeric displayName (removing any non-alphanumeric characters)
-  const safePageId = pageId.toString().replace(/[^a-zA-Z0-9]/g, '');
+  console.log(`registerSiteCodeLoader called with siteId=${siteId}, webflowSiteId=${webflowSiteId}`);
+  console.log(`headFiles=${JSON.stringify(headFiles)}, bodyFiles=${JSON.stringify(bodyFiles)}`);
+  
+  // Create alphanumeric displayName
+  const safeSiteId = siteId.toString().replace(/[^a-zA-Z0-9]/g, '');
+  
+  // First, clear any existing custom code so we don't keep outdated loader scripts
+  try {
+    await scriptController.deleteSiteCustomCode(webflowSiteId)
+    console.log(`Cleared existing custom code for site ${webflowSiteId}`)
+  } catch (err) {
+    console.warn(`Could not clear existing custom code for site ${webflowSiteId}:`, err)
+  }
   
   // Register head loader if needed
   if (headFiles && headFiles.length > 0) {
     try {
+      // Important: We NEED TO USE siteId here, not webflowSiteId
       // Generate the loader script for head
+      console.log("About to generate head loader script with:", {
+        siteId,
+        webflowSiteId,
+        typeOfSiteId: typeof siteId,
+        isNumeric: !isNaN(Number(siteId))
+      });
+      
       const headScript = generateLoaderScript({
-        id: pageId,
-        type: 'page',
+        id: siteId, // Use Supabase siteId for the edge function to query by id
+        type: 'site',
         location: 'head',
         supabaseUrl,
         supabaseKey
       });
       
-      const headDisplayName = `CodeHead${safePageId.substring(0, 8)}`;
+      const headDisplayName = `SiteHead${safeSiteId.substring(0, 8)}`;
+      console.log(`Registering head script with name ${headDisplayName}`);
       
       // Register the script with Webflow with retry logic
       const scriptResult = await registerScriptWithRetry(
@@ -102,9 +120,10 @@ export async function registerCodeLoader({
       );
       
       if (scriptResult.success && scriptResult.scriptId) {
-        // Apply the script to the page
-        await scriptController.upsertPageCustomCode(
-          webflowPageId,
+        console.log(`Head script registered successfully with ID ${scriptResult.scriptId}`);
+        // Apply the script to the site
+        await scriptController.upsertSiteCustomCode(
+          webflowSiteId,
           scriptResult.scriptId,
           "header", // Place in head
           "1.0.0"
@@ -119,7 +138,7 @@ export async function registerCodeLoader({
         throw new Error(scriptResult.error || "Failed to register head script");
       }
     } catch (error: unknown) {
-      console.error("Failed to register head code loader:", error);
+      console.error("Failed to register site head code loader:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       results.head = { registered: false, scriptId: null, error: errorMessage };
     }
@@ -128,16 +147,25 @@ export async function registerCodeLoader({
   // Register body loader if needed
   if (bodyFiles && bodyFiles.length > 0) {
     try {
+      // Important: We NEED TO USE siteId here, not webflowSiteId
       // Generate the loader script for body
+      console.log("About to generate body loader script with:", {
+        siteId,
+        webflowSiteId,
+        typeOfSiteId: typeof siteId,
+        isNumeric: !isNaN(Number(siteId))
+      });
+      
       const bodyScript = generateLoaderScript({
-        id: pageId,
-        type: 'page',
+        id: siteId, // Use Supabase siteId for the edge function to query by id
+        type: 'site',
         location: 'body',
         supabaseUrl,
         supabaseKey
       });
       
-      const bodyDisplayName = `CodeBody${safePageId.substring(0, 8)}`;
+      const bodyDisplayName = `SiteBody${safeSiteId.substring(0, 8)}`;
+      console.log(`Registering body script with name ${bodyDisplayName}`);
       
       // Register the script with Webflow with retry logic
       const scriptResult = await registerScriptWithRetry(
@@ -148,9 +176,10 @@ export async function registerCodeLoader({
       );
       
       if (scriptResult.success && scriptResult.scriptId) {
-        // Apply the script to the page
-        await scriptController.upsertPageCustomCode(
-          webflowPageId,
+        console.log(`Body script registered successfully with ID ${scriptResult.scriptId}`);
+        // Apply the script to the site
+        await scriptController.upsertSiteCustomCode(
+          webflowSiteId,
           scriptResult.scriptId,
           "footer", // Place in body
           "1.0.0"
@@ -165,7 +194,7 @@ export async function registerCodeLoader({
         throw new Error(scriptResult.error || "Failed to register body script");
       }
     } catch (error: unknown) {
-      console.error("Failed to register body code loader:", error);
+      console.error("Failed to register site body code loader:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       results.body = { registered: false, scriptId: null, error: errorMessage };
     }

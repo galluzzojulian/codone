@@ -32,7 +32,7 @@ interface SiteTabProps {
  * - View current script application status for the site
  * - Apply scripts to either the header or footer of the site
  * - Display real-time feedback on script application status
- * - Update the head_code and body_code arrays in the Sites table in Supabase
+ * - Update the head_files and body_files arrays in the Sites table in Supabase
  */
 export function SiteTab({
   currentSite,
@@ -82,8 +82,8 @@ export function SiteTab({
    * 
    * Additionally, this will:
    * - Update the Supabase Sites table with the script in the appropriate location
-   * - head_code for "header" location
-   * - body_code for "footer" location
+   * - head_files for "header" location
+   * - body_files for "footer" location
    */
   const handleApplyCode = async (location: "header" | "footer") => {
     if (!selectedScript || !currentSite) return;
@@ -114,10 +114,10 @@ export function SiteTab({
         },
         body: JSON.stringify({
           webflow_site_id: currentSite.id,
-          // Update either head_code or body_code depending on location
+          // Update either head_files or body_files depending on location
           ...(location === "header" 
-            ? { head_code: [scriptInfo] } 
-            : { body_code: [scriptInfo] })
+            ? { head_files: [scriptInfo] } 
+            : { body_files: [scriptInfo] })
         }),
       });
 

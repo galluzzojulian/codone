@@ -22,10 +22,10 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
-import CodeEditor from "@uiw/react-textarea-code-editor";
 import { useFiles } from "../hooks/useFiles";
 import { FileLanguage, SiteFile } from "../types/types";
 import { useAuth } from "../hooks/useAuth";
+import { MonacoCodeEditor } from "./MonacoCodeEditor";
 
 interface FilesSectionProps {
   siteId: string;
@@ -488,20 +488,10 @@ export function FilesSection({ siteId }: FilesSectionProps) {
           </Button>
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>
-          <CodeEditor
+          <MonacoCodeEditor
             value={editingCode}
             language={editingFile?.language || "html"}
-            placeholder="// Write code here"
-            onChange={(e) => setEditingCode(e.target.value)}
-            padding={20}
-            style={{
-              fontSize: 14,
-              backgroundColor: "#1E1E1E",
-              color: "#fff",
-              minHeight: "100vh",
-              fontFamily:
-                "ui-monospace, SFMono-Regular, SF Mono, Consolas, Liberation Mono, Menlo, monospace",
-            }}
+            onChange={(value) => setEditingCode(value)}
           />
         </DialogContent>
       </Dialog>

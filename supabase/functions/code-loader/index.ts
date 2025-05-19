@@ -22,66 +22,42 @@ serve(async (req) => {
     )
     
     // Parse request data
-    const { id, type, location } = await req.json()
+    const { id, location } = await req.json()
     
-    if (!id || !type || !location) {
+    console.log(`Processing request: ${location} for page ID ${id}`)
+    
+    if (!id || !location) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
     
-    // Determine if we're loading page or site code
-    let fileIds = []
-    if (type === 'page') {
-      const { data: page, error } = await supabaseClient
-        .from('Pages')
-        .select(location === 'head' ? 'head_files' : 'body_files')
-        .eq('id', id)
-        .single()
-      
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: `Page not found: ${error.message}` }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      // Parse the file IDs as JSON if they're stored as strings
-      const fileIdsString = location === 'head' ? page.head_files : page.body_files
-      try {
-        if (typeof fileIdsString === 'string') {
-          fileIds = JSON.parse(fileIdsString)
-        } else {
-          fileIds = fileIdsString
-        }
-      } catch (err) {
-        return new Response(
-          JSON.stringify({ error: `Invalid file IDs format: ${err.message}` }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    } else if (type === 'site') {
-      // Implement site-wide code loading if needed
-      const { data: site, error } = await supabaseClient
-        .from('Sites')
-        .select('head_code, body_code')
-        .eq('webflow_site_id', id)
-        .single()
-        
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: `Site not found: ${error.message}` }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      // For now, return empty content for sites
+    // Load page code
+    let fileIds: number[] = []
+    const { data: page, error } = await supabaseClient
+      .from('Pages')
+      .select(location === 'head' ? 'head_files' : 'body_files')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error(`Page query error: ${error.message}`)
       return new Response(
-        JSON.stringify({ html: '', css: '', js: '' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `Page not found: ${error.message}` }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    
+    console.log(`Page data found:`, page)
+    
+    // Parse the file IDs as JSON if they're stored as strings
+    const fileIdsField = location === 'head' ? page.head_files : page.body_files
+    console.log(`Raw ${location} files data:`, fileIdsField)
+    
+    fileIds = parseFileIds(fileIdsField)
+    
+    console.log(`Parsed file IDs:`, fileIds)
     
     if (!fileIds || !fileIds.length) {
       return new Response(
@@ -91,17 +67,20 @@ serve(async (req) => {
     }
     
     // Fetch all required files
-    const { data: files, error } = await supabaseClient
+    const { data: files, error: filesError } = await supabaseClient
       .from('Files')
       .select('*')
       .in('id', fileIds)
     
-    if (error) {
+    if (filesError) {
+      console.error(`Files query error: ${filesError.message}`)
       return new Response(
-        JSON.stringify({ error: `Error fetching files: ${error.message}` }),
+        JSON.stringify({ error: `Error fetching files: ${filesError.message}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    
+    console.log(`Found ${files?.length} files:`, files.map(f => ({ id: f.id, name: f.name, lang: f.language })))
     
     // Organize files by language
     const html = files.filter(f => f.language === 'html').map(f => f.code).join('\n')
@@ -113,9 +92,48 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error(`Uncaught error: ${error.message}`)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
-}) 
+})
+
+/**
+ * Helper function to parse file IDs from various formats
+ * @param fileIdsField The value from the database (can be string, array, or null)
+ * @returns Array of file IDs as numbers
+ */
+function parseFileIds(fileIdsField: any): number[] {
+  if (!fileIdsField) return []
+  
+  try {
+    // If it's already an array, use it directly
+    if (Array.isArray(fileIdsField)) {
+      return fileIdsField.map(id => typeof id === 'object' && id !== null ? Number(id.id) : Number(id))
+        .filter(id => !isNaN(id))
+    }
+    
+    // If it's a string, try to parse it as JSON
+    if (typeof fileIdsField === 'string') {
+      try {
+        const parsed = JSON.parse(fileIdsField)
+        if (Array.isArray(parsed)) {
+          return parsed.map(id => typeof id === 'object' && id !== null ? Number(id.id) : Number(id))
+            .filter(id => !isNaN(id))
+        }
+        return []
+      } catch (e) {
+        console.error(`Failed to parse file IDs string: ${fileIdsField}`)
+        return []
+      }
+    }
+    
+    // Fallback: return empty array
+    return []
+  } catch (err) {
+    console.error(`Error parsing file IDs: ${err.message}`)
+    return []
+  }
+} 

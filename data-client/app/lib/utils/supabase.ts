@@ -30,8 +30,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
  */
 interface SiteData {
   pages?: any[];
-  head_code?: string;
-  body_code?: string;
+  head_files?: string;
+  body_files?: string;
 }
 
 /**
@@ -43,7 +43,7 @@ interface SiteData {
  * 
  * @param {string} webflowSiteId - The unique identifier for the Webflow site
  * @param {string} owner - The owner of the site (could be user ID or email)
- * @param {SiteData} siteData - Additional site data like pages, head_code, body_code
+ * @param {SiteData} siteData - Additional site data like pages, head_files, body_files
  * @returns {Promise<object>} - The inserted record
  * @throws {Error} If the Supabase operation fails
  */
@@ -57,13 +57,19 @@ export async function insertSite(
     throw new Error('webflowSiteId is required');
   }
 
+  console.log('insertSite called with:', {
+    webflowSiteId,
+    owner,
+    siteData: JSON.stringify(siteData)
+  });
+
   // Create the data object for upsert with proper typing
   const siteRecord: {
     webflow_site_id: string;
     owner: string;
     pages?: any[];
-    head_code?: string;
-    body_code?: string;
+    head_files?: string;
+    body_files?: string;
   } = {
     webflow_site_id: webflowSiteId,
     owner
@@ -72,8 +78,30 @@ export async function insertSite(
   // Only include site data fields that are provided (non-null, non-undefined)
   // This ensures we don't overwrite existing data with null values during an update
   if (siteData.pages !== undefined) siteRecord.pages = siteData.pages;
-  if (siteData.head_code !== undefined) siteRecord.head_code = siteData.head_code;
-  if (siteData.body_code !== undefined) siteRecord.body_code = siteData.body_code;
+  
+  // Handle head_files
+  if (siteData.head_files !== undefined) {
+    // Check if head_files is already a string
+    if (typeof siteData.head_files === 'string') {
+      siteRecord.head_files = siteData.head_files;
+    } else {
+      // Convert to JSON string if it's not already a string
+      siteRecord.head_files = JSON.stringify(siteData.head_files);
+    }
+  }
+  
+  // Handle body_files
+  if (siteData.body_files !== undefined) {
+    // Check if body_files is already a string
+    if (typeof siteData.body_files === 'string') {
+      siteRecord.body_files = siteData.body_files;
+    } else {
+      // Convert to JSON string if it's not already a string
+      siteRecord.body_files = JSON.stringify(siteData.body_files);
+    }
+  }
+
+  console.log('Prepared siteRecord for upsert:', JSON.stringify(siteRecord, null, 2));
 
   // Perform upsert operation with conflict handling on webflow_site_id
   const { data, error } = await supabase
@@ -90,7 +118,7 @@ export async function insertSite(
     throw error;
   }
 
-  console.log('Site successfully stored in Supabase');
+  console.log('Site successfully stored in Supabase:', data);
   return data;
 }
 

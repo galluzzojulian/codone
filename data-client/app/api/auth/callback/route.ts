@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
         existingSites.forEach(site => {
           if (site) {
             existingSitesData.set(site.webflow_site_id, {
-              head_code: site.head_code || '',
-              body_code: site.body_code || '',
+              head_files: site.head_files || '',
+              body_files: site.body_files || '',
               pages: site.pages || []
             });
           }
@@ -136,8 +136,8 @@ export async function GET(request: NextRequest) {
             {
               // Use existing data if available, otherwise use defaults
               pages: existingSite ? existingSite.pages : [],
-              head_code: existingSite ? existingSite.head_code : '',
-              body_code: existingSite ? existingSite.body_code : ''
+              head_files: existingSite ? existingSite.head_files : '',
+              body_files: existingSite ? existingSite.body_files : ''
             }
           );
         })

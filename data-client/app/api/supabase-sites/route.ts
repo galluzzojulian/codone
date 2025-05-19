@@ -83,8 +83,8 @@ export async function OPTIONS(request: NextRequest) {
  * Request Body:
  * - webflow_site_id: (required) The Webflow site ID to update
  * - pages: (optional) Array of pages for the site
- * - head_code: (optional) Custom code for the site head
- * - body_code: (optional) Custom code for the site body
+ * - head_files: (optional) Custom code for the site head
+ * - body_files: (optional) Custom code for the site body
  * - owner: (optional) User ID of the site owner
  * 
  * Response:
@@ -106,7 +106,9 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { webflow_site_id, pages, head_code, body_code, owner } = body;
+    console.log("Received POST body:", JSON.stringify(body, null, 2));
+    
+    const { webflow_site_id, pages, head_files, body_files, owner } = body;
 
     // Validate required fields
     if (!webflow_site_id) {
@@ -115,20 +117,40 @@ export async function POST(request: NextRequest) {
 
     // Check if site exists
     const existingSite = await supabaseClient.getSiteById(webflow_site_id);
+    console.log("Existing site:", existingSite ? JSON.stringify({
+      webflow_site_id: existingSite.webflow_site_id,
+      head_files: existingSite.head_files,
+      body_files: existingSite.body_files
+    }, null, 2) : "No existing site");
     
     // If updating an existing site, use current owner if not provided
     const siteOwner = owner || (existingSite ? existingSite.owner : 'system');
 
-    // Update or create site data
-    await supabaseClient.insertSite(
+    // Prepare data for insert
+    const siteData = {
+      pages: pages || (existingSite ? existingSite.pages : []),
+      head_files: head_files || (existingSite ? existingSite.head_files : ''),
+      body_files: body_files || (existingSite ? existingSite.body_files : '')
+    };
+    
+    console.log("Data being sent to insertSite:", JSON.stringify({
       webflow_site_id,
       siteOwner,
-      {
-        pages: pages || (existingSite ? existingSite.pages : []),
-        head_code: head_code || (existingSite ? existingSite.head_code : ''),
-        body_code: body_code || (existingSite ? existingSite.body_code : '')
-      }
-    );
+      siteData
+    }, null, 2));
+
+    // Update or create site data
+    try {
+      const result = await supabaseClient.insertSite(
+        webflow_site_id,
+        siteOwner,
+        siteData
+      );
+      console.log("Insert result:", result);
+    } catch (insertError) {
+      console.error("Error inserting site into Supabase:", insertError);
+      return NextResponse.json({ error: "Failed to insert site" }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,

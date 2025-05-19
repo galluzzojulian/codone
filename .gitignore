@@ -8,6 +8,9 @@ lerna-debug.log*
 .pnpm-debug.log*
 .turbo
 
+# Project specific
+developer_context.md
+
 # Database
 data-client/db/database.db
 *.db

@@ -36,7 +36,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useAuth } from "../hooks/useAuth";
 import { useFiles } from "../hooks/useFiles";
 import { usePages } from "../hooks/usePages";
-import { SiteWideCodeManager } from "./SiteWideCodeManager";
 
 interface PageFileManagerProps {
   siteId: string;
@@ -1378,72 +1377,6 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
               </FormControl>
             </Box>
           </Paper>
-        </Box>
-        
-        {/* Site-wide section - ensure all list components have keys */}
-        <Box 
-          sx={{ 
-            mt: 3,
-            borderRadius: 3,
-            overflow: 'hidden',
-            backgroundColor: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}
-        >
-          <Accordion 
-            key="site-wide-accordion"
-            defaultExpanded={true}
-            disableGutters
-            elevation={0}
-            sx={{ 
-              backgroundColor: 'transparent',
-              border: 'none',
-              '&:before': {
-                display: 'none',
-              },
-            }}
-          >
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />}
-              sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                padding: '0 24px',
-                minHeight: '64px',
-                '& .MuiAccordionSummary-content': {
-                  margin: 0,
-                },
-                outline: 'none',
-                '&.Mui-focused': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                  outline: 'none',
-                },
-                '&:focus': {
-                  outline: 'none',
-                },
-                '&:focus-visible': {
-                  outline: 'none',
-                },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <CodeIcon sx={{ color: 'rgba(255, 255, 255, 0.7)', opacity: 0.8 }} />
-                <Typography 
-                  variant="subtitle1" 
-                  sx={{ 
-                    fontWeight: 600, 
-                    color: 'white',
-                    letterSpacing: '0.2px'
-                  }}
-                >
-                  Site-wide Code Management
-                </Typography>
-              </Box>
-            </AccordionSummary>
-            
-            <AccordionDetails sx={{ p: 3 }}>
-              <SiteWideCodeManager siteId={siteId} />
-            </AccordionDetails>
-          </Accordion>
         </Box>
       </Box>
     </Card>

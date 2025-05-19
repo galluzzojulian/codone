@@ -254,7 +254,7 @@ export function Dashboard({
               Hello, {user.firstName} 👋
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Welcome to your Webflow extension dashboard
+              Welcome to your Codone - your Webflow code manager!
             </Typography>
           </Grid>
           <Grid item xs={12} sm={5} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>

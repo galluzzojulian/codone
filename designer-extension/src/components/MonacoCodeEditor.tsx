@@ -1,8 +1,9 @@
 import { Editor, useMonaco } from '@monaco-editor/react';
 import { useEffect, useRef, useState } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { FileLanguage } from '../types/types';
 import * as monaco from 'monaco-editor';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Map FileLanguage to Monaco language IDs
 const languageMap: Record<FileLanguage, string> = {
@@ -15,12 +16,38 @@ interface MonacoCodeEditorProps {
   language: FileLanguage;
   value: string;
   onChange: (value: string) => void;
+  onDiscard?: () => void;
 }
 
-export function MonacoCodeEditor({ language, value, onChange }: MonacoCodeEditorProps) {
+export function MonacoCodeEditor({ language, value, onChange, onDiscard }: MonacoCodeEditorProps) {
   const monaco = useMonaco();
   const editorRef = useRef<any>(null);
   const [errors, setErrors] = useState<monaco.editor.IMarker[]>([]);
+  const [initialValue] = useState(value); // Store initial value to detect changes
+  const [discardModalOpen, setDiscardModalOpen] = useState(false);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = () => {
+    const currentValue = editorRef.current?.getValue();
+    return currentValue !== initialValue;
+  };
+
+  // Handle back button click
+  const handleBackClick = () => {
+    if (hasUnsavedChanges()) {
+      setDiscardModalOpen(true);
+    } else if (onDiscard) {
+      onDiscard();
+    }
+  };
+
+  // Handle discard confirmation
+  const handleConfirmDiscard = () => {
+    setDiscardModalOpen(false);
+    if (onDiscard) {
+      onDiscard();
+    }
+  };
 
   // Configure Monaco editor when it's loaded
   useEffect(() => {
@@ -166,6 +193,31 @@ export function MonacoCodeEditor({ language, value, onChange }: MonacoCodeEditor
 
   return (
     <Box sx={{ width: '100%', height: '100%', minHeight: '100vh', position: 'relative' }}>
+      <Box sx={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        zIndex: 10, 
+        m: 1,
+        display: 'flex',
+        alignItems: 'center' 
+      }}>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBackClick}
+          sx={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white'
+            }
+          }}
+        >
+          Go Back
+        </Button>
+      </Box>
+      
       <Editor
         height="100%"
         width="100%"
@@ -182,7 +234,7 @@ export function MonacoCodeEditor({ language, value, onChange }: MonacoCodeEditor
           automaticLayout: true,
           tabSize: 2,
           wordWrap: 'on',
-          padding: { top: 20 },
+          padding: { top: 60 }, // Increased padding for the back button
           formatOnPaste: true,
           formatOnType: true,
           autoIndent: 'full',
@@ -214,6 +266,54 @@ export function MonacoCodeEditor({ language, value, onChange }: MonacoCodeEditor
         loading={<CircularProgress size={40} sx={{ color: '#4353ff' }} />}
       />
       <ErrorDisplay />
+
+      {/* Discard Changes Confirmation Modal */}
+      <Dialog
+        open={discardModalOpen}
+        onClose={() => setDiscardModalOpen(false)}
+        maxWidth="xs"
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: 2,
+            bgcolor: '#292929'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontSize: "1.1rem", 
+          fontWeight: 600, 
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          p: 2.5,
+          color: "#ff5252"
+        }}>
+          Discard Changes
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, mt: 1 }}>
+          <Typography>
+            You have unsaved changes. Discarding changes cannot be undone. Are you sure you want to continue?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}>
+          <Button 
+            onClick={() => setDiscardModalOpen(false)}
+            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleConfirmDiscard}
+            sx={{
+              bgcolor: '#ff5252',
+              '&:hover': {
+                bgcolor: '#ff3333'
+              }
+            }}
+          >
+            Discard Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 

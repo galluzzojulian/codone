@@ -579,6 +579,7 @@ export function FilesSection({ siteId }: FilesSectionProps) {
             value={editingCode}
             language={editingFile?.language || "html"}
             onChange={(value) => setEditingCode(value)}
+            onDiscard={() => setEditingFile(null)}
           />
         </DialogContent>
       </Dialog>

@@ -1,0 +1,5 @@
+# Ignore local development environment variables
+.dev.vars
+
+# Wrangler state
+.wrangler/ 

@@ -91,7 +91,7 @@ export async function registerCodeLoader({
         supabaseKey
       });
       
-      const headDisplayName = `CodeHead${safePageId.substring(0, 8)}`;
+      const headDisplayName = `CodeHead${safePageId.substring(0, 8)}Cfw`;
       
       // Register the script with Webflow with retry logic
       const scriptResult = await registerScriptWithRetry(
@@ -137,7 +137,7 @@ export async function registerCodeLoader({
         supabaseKey
       });
       
-      const bodyDisplayName = `CodeBody${safePageId.substring(0, 8)}`;
+      const bodyDisplayName = `CodeBody${safePageId.substring(0, 8)}Cfw`;
       
       // Register the script with Webflow with retry logic
       const scriptResult = await registerScriptWithRetry(

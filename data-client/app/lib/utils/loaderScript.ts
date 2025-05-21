@@ -29,12 +29,10 @@ export const generateLoaderScript = (config: LoaderConfig): string => {
   // Minified version of the loader script to stay under 2000 characters
   return `(function(){
 const c={id:${idValue},type:"${config.type}",location:"${config.location}"};
-const u="${config.supabaseUrl}";
-const k="${config.supabaseKey}";
-fetch(u+"/functions/v1/code-loader",{
-method:'POST',
-headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
-body:JSON.stringify(c)
+const newBaseUrl="https://loader.codone-loader.workers.dev/";
+fetch(\`\${newBaseUrl}?pageId=\${c.id}&location=\${c.location}\`,{
+method:'GET',
+headers: {'Content-Type': 'application/json'}
 }).then(r=>{
 if(!r.ok)throw new Error('Load failed: '+r.status);
 return r.json()

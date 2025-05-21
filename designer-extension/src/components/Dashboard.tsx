@@ -250,6 +250,13 @@ export function Dashboard({
       >
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} sm={7}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <img 
+                src="/assets/codone-long-white.svg" 
+                alt="Codone" 
+                style={{ height: 15, marginRight: 16 }} 
+              />
+            </Box>
             <Typography variant="h1" sx={{ mb: 0.5, color: 'text.primary' }}>
               Hello, {user.firstName} 👋
             </Typography>

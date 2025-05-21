@@ -228,7 +228,7 @@ export function MonacoCodeEditor({ language, value, onChange, onDiscard }: Monac
         defaultValue={value}
         options={{
           fontSize: 14,
-          fontFamily: 'ui-monospace, SFMono-Regular, SF Mono, Consolas, Liberation Mono, Menlo, monospace',
+          fontFamily: '"Fira Code", ui-monospace, SFMono-Regular, monospace',
           minimap: { enabled: true },
           scrollBeyondLastLine: false,
           automaticLayout: true,

@@ -8,6 +8,7 @@ import {
   ListItemButton,
   AppBar,
   Toolbar,
+  Box,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -38,7 +39,7 @@ export function Navigation() {
         elevation={0}
         sx={{ top: 0 }}
       >
-        <Toolbar>
+        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <IconButton
             edge="start"
             color="inherit"
@@ -46,6 +47,13 @@ export function Navigation() {
           >
             <MenuIcon />
           </IconButton>
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/assets/codone-icon-white.svg" 
+              alt="Codone" 
+              style={{ height: 15, marginRight: 16 }} 
+            />
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -54,6 +62,13 @@ export function Navigation() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
+          <img 
+            src="/assets/codone-long-white.svg" 
+            alt="Codone" 
+            style={{ height: 15 }} 
+          />
+        </Box>
         <List sx={{ width: 250 }}>
           {menuItems.map((item) => (
             <ListItemButton

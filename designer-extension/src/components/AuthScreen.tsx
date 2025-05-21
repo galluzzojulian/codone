@@ -1,4 +1,4 @@
-import { Container, Typography, Button } from "@mui/material";
+import { Container, Typography, Button, Box, Paper } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
 
@@ -56,21 +56,72 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
   };
 
   return (
-    <Container sx={{ padding: "20px" }}>
-      <Typography variant="h1">
-        {user.firstName
-          ? `Welcome back ${user.firstName} 👋🏾`
-          : "Hello Stranger 👋🏾"}
-      </Typography>
-      
-      <Button
-        variant="contained"
-        sx={{ margin: "10px 20px" }}
-        onClick={openAuthScreen}
-        disabled={isAuthorizing}
+    <Container 
+      sx={{ 
+        height: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center'
+      }}
+    >
+      <Paper 
+        elevation={0}
+        sx={{ 
+          maxWidth: 480, 
+          width: '100%',
+          p: 4, 
+          borderRadius: 3, 
+          border: '1px solid',
+          borderColor: 'divider',
+          textAlign: 'center',
+          bgcolor: 'background.paper'
+        }}
       >
-        {isAuthorizing ? "Authorizing..." : "Authorize App"}
-      </Button>
+        {/* Logo */}
+        <Box sx={{ mb: 3 }}>
+          <img 
+            src="/assets/codone-long-white.svg" 
+            alt="Codone Logo" 
+            style={{ maxWidth: 150, height: 'auto' }} 
+          />
+        </Box>
+
+        <Typography 
+          variant="h1" 
+          sx={{ 
+            mb: 2,
+            fontSize: { xs: '1.75rem', sm: '2rem' } 
+          }}
+        >
+          Welcome to Codone
+        </Typography>
+        
+        <Typography 
+          variant="body1" 
+          color="text.secondary" 
+          sx={{ mb: 3 }}
+        >
+          To continue, please authorize your app.
+        </Typography>
+        
+        <Button
+          variant="contained"
+          size="large"
+          fullWidth
+          onClick={openAuthScreen}
+          disabled={isAuthorizing}
+          sx={{ 
+            py: 1.2,
+            textTransform: 'none',
+            fontSize: '1rem',
+            fontWeight: 500,
+            borderRadius: 2,
+            boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
+          }}
+        >
+          {isAuthorizing ? "Authorizing..." : "Authorize with Webflow"}
+        </Button>
+      </Paper>
     </Container>
   );
 }

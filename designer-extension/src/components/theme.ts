@@ -26,7 +26,7 @@ const theme = createTheme({
     divider: 'rgba(255, 255, 255, 0.1)',
   },
   typography: {
-    fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Fira Code", monospace',
     h1: {
       fontSize: '2rem',
       fontWeight: 600,

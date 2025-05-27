@@ -4,6 +4,6 @@ compatibility_date = "2024-05-21"
 workers_dev = true # Explicitly enable workers.dev route
 
 [vars]
-CACHE_TTL = "10"  # Cache time in seconds (1 hour)
+CACHE_TTL = "3600"  # Cache time in seconds (1 hour)
 # SUPABASE_ANON_KEY - Removed, managed in dashboard secrets & .dev.vars
 # SUPABASE_URL - Removed, managed in dashboard secrets & .dev.vars

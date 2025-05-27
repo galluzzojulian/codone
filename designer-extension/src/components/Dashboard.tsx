@@ -204,7 +204,7 @@ export function Dashboard({
   }, [devMode, base_url]);
 
   return (
-    <Container maxWidth="lg" sx={{ pt: 4, pb: 2 }}>
+    <Container maxWidth="lg" sx={{ pt: 0, pb: 2 }}>
       {/* Show development API status if needed */}
       {devMode && apiStatus === "error" && (
         <Alert 
@@ -237,11 +237,11 @@ export function Dashboard({
       )}
 
       {/* Hello Julian */}
-      <Paper 
+      {/* <Paper
         elevation={0}
-        sx={{ 
-          p: 3, 
-          mb: 4, 
+        sx={{
+          p: 3,
+          mb: 4,
           backgroundColor: 'background.paper',
           borderRadius: 2,
           border: '1px solid',
@@ -251,10 +251,10 @@ export function Dashboard({
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} sm={7}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <img 
-                src="/assets/codone-long-white.svg" 
-                alt="Codone" 
-                style={{ height: 15, marginRight: 16 }} 
+              <img
+                src="/assets/codone-long-white.svg"
+                alt="Codone"
+                style={{ height: 15, marginRight: 16 }}
               />
             </Box>
             <Typography variant="h1" sx={{ mb: 0.5, color: 'text.primary' }}>
@@ -266,15 +266,15 @@ export function Dashboard({
           </Grid>
           <Grid item xs={12} sm={5} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
             {currentSite && (
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                px: 2, 
-                py: 1, 
-                bgcolor: 'rgba(255, 255, 255, 0.05)', 
-                borderRadius: 2, 
-                border: '1px solid', 
-                borderColor: 'divider' 
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                px: 2,
+                py: 1,
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider'
               }}>
                 <LanguageIcon sx={{ color: 'primary.main', mr: 1, fontSize: 20 }} />
                 <Box>
@@ -285,7 +285,7 @@ export function Dashboard({
             )}
           </Grid>
         </Grid>
-      </Paper>
+      </Paper> */}
 
       {/* Page Code Manager */}
       {currentSite && (

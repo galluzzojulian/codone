@@ -17,6 +17,7 @@ interface Env {
 	SUPABASE_URL: string;
 	SUPABASE_ANON_KEY: string;
 	CACHE_TTL: string;
+	PURGE_SECRET: string;
 }
 
 // Helper function to parse file IDs (adapted from Supabase edge function)
@@ -49,24 +50,66 @@ function parseFileIds(fileIdsField: any): number[] {
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		// Handle CORS
+		// Handle CORS preflight requests
 		if (request.method === 'OPTIONS') {
 			return new Response(null, {
 				headers: {
 					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Methods': 'GET, OPTIONS',
-					'Access-Control-Allow-Headers': 'Content-Type',
+					'Access-Control-Allow-Methods': 'GET, OPTIONS, PURGE',
+					'Access-Control-Allow-Headers': 'Content-Type, X-Purge-Secret',
 				},
 			});
 		}
 
-		// Only allow GET requests
+		const cache = caches.default;
+		const url = new URL(request.url);
+
+		// Handle PURGE requests for cache invalidation
+		if (request.method === 'PURGE') {
+			const clientPurgeSecret = request.headers.get('X-Purge-Secret');
+			if (clientPurgeSecret !== env.PURGE_SECRET) {
+				return new Response('Unauthorized', { status: 401 });
+			}
+
+			const pageId = url.searchParams.get('pageId');
+			const location = url.searchParams.get('location');
+
+			if (!pageId || !location) {
+				return new Response('Missing pageId or location for PURGE', { status: 400 });
+			}
+
+			// Construct the request object that was used as the cache key for GET
+			const originalGetRequestUrl = new URL(request.url);
+			originalGetRequestUrl.searchParams.set('pageId', pageId);
+			originalGetRequestUrl.searchParams.set('location', location);
+			const cacheKeyRequest = new Request(originalGetRequestUrl.toString(), { method: 'GET' });
+
+			try {
+				const deleted = await cache.delete(cacheKeyRequest);
+				if (deleted) {
+					console.log(`Cache purged for pageId: ${pageId}, location: ${location}`);
+					return new Response(JSON.stringify({ success: true, message: 'Cache purged' }), {
+						headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+					});
+				} else {
+					console.log(`Cache not found for pageId: ${pageId}, location: ${location}`);
+					return new Response(JSON.stringify({ success: false, message: 'Cache entry not found' }), {
+						status: 404,
+						headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+					});
+				}
+			} catch (err: any) {
+				console.error(`Error purging cache for pageId: ${pageId}, location: ${location}: ${err.message}`);
+				return new Response('Error purging cache', { status: 500 });
+			}
+		}
+
+		// Only allow GET requests for normal fetching (PURGE is handled above)
 		if (request.method !== 'GET') {
 			return new Response('Method not allowed', { status: 405 });
 		}
 
 		try {
-			const url = new URL(request.url);
 			const pageId = url.searchParams.get('pageId');
 			const location = url.searchParams.get('location'); // 'head' or 'body'
 
@@ -78,7 +121,6 @@ export default {
 			const cacheKey = `code-${pageId}-${location}`;
 			
 			// Try to get from cache first
-			const cache = caches.default;
 			let response = await cache.match(request);
 			
 			if (response) {
@@ -174,7 +216,7 @@ export default {
 				},
 			});
 
-			// Store in cache
+			// Store in cache. For GET, `request` object is the key.
 			ctx.waitUntil(cache.put(request, response.clone()));
 
 			return response;

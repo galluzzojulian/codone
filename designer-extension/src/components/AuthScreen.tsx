@@ -1,59 +1,68 @@
-import { Container, Typography, Button, Box, Paper } from "@mui/material";
-import { useAuth } from "../hooks/useAuth";
+import { Container, Typography, Button, Box, Paper, TextField, Alert } from "@mui/material";
+// import { useAuth } from "../hooks/useAuth"; // Not directly used here anymore, AppContent handles post-auth
 import { useState } from "react";
+// import memberstackDOM from "@memberstack/dom"; // No longer needed, get instance from context
+import { useMemberstack } from "../contexts/MemberstackContext"; // Import the custom hook
 
 /**
  * AuthScreen Component
  *
- * Displays an authentication flow showing a button to authorize the app with Webflow
+ * Displays a Memberstack email/password login form.
+ * On successful login, calls the onAuth callback.
  *
  * @param onAuth - Callback function that runs after successful authentication.
  */
 export function AuthScreen({ onAuth }: { onAuth: () => void }) {
-  const base_url = import.meta.env.VITE_NEXTJS_API_URL;
-  const [isAuthorizing, setIsAuthorizing] = useState(false);
-  
-  // Initialize the auth hook which provides methods for authentication
-  const { user, exchangeAndVerifyIdToken } = useAuth();
+  const memberstack = useMemberstack(); // Get Memberstack instance from context
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Function to open the authorization popup window
+  // The base_url and useAuth hook might still be needed if Webflow auth follows Memberstack auth
+  // const base_url = import.meta.env.VITE_NEXTJS_API_URL;
+  // const { user, exchangeAndVerifyIdToken } = useAuth();
+
+
+  const handleMemberstackLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setIsLoggingIn(true);
+
+    try {
+      const { data, error: loginErrorObj } = await memberstack.loginMemberEmailPassword({
+        email,
+        password,
+      });
+
+      if (loginErrorObj) {
+        // Use loginErrorObj for more detailed error information if available
+        throw new Error(loginErrorObj.message || "An unknown error occurred during login.");
+      }
+      
+      if (data?.member) {
+        console.log("Memberstack login successful:", data.member);
+        onAuth(); 
+      } else {
+        throw new Error("Login did not return a member object and no specific error was provided.");
+      }
+
+    } catch (err: any) {
+      console.error("Memberstack login error:", err);
+      setError(err.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+  
+  // Original Webflow authorization logic - can be re-introduced if needed after MS login
+  /*
   const openAuthScreen = async () => {
     setIsAuthorizing(true);
     console.log("Opening auth window...");
-    
-    try {
-      const authWindow = window.open(
-        `${base_url}/api/auth/authorize?state=webflow_designer`,
-        "_blank",
-        "width=600,height=600"
-      );
-
-      // Check if the authorization window is closed
-      const checkWindow = setInterval(async () => {
-        if (authWindow?.closed) {
-          console.log("Auth window closed, trying direct token exchange");
-          clearInterval(checkWindow);
-          
-          // Clear any previous auth data
-          localStorage.removeItem("wf_hybrid_user");
-          localStorage.removeItem("explicitly_logged_out");
-          
-          // Try to get a token directly
-          try {
-            await exchangeAndVerifyIdToken();
-            onAuth();
-          } catch (error) {
-            console.error("Failed to exchange token after auth window closed:", error);
-          }
-          
-          setIsAuthorizing(false);
-        }
-      }, 1000);
-    } catch (error) {
-      console.error("Error opening auth window:", error);
-      setIsAuthorizing(false);
-    }
+    // ... (rest of original openAuthScreen logic)
   };
+  */
 
   return (
     <Container 
@@ -66,6 +75,8 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
     >
       <Paper 
         elevation={0}
+        component="form" // Make Paper a form element
+        onSubmit={handleMemberstackLogin}
         sx={{ 
           maxWidth: 480, 
           width: '100%',
@@ -77,7 +88,6 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
           bgcolor: 'background.paper'
         }}
       >
-        {/* Logo */}
         <Box sx={{ mb: 3 }}>
           <img 
             src="/assets/codone-long-white.svg" 
@@ -89,11 +99,11 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
         <Typography 
           variant="h1" 
           sx={{ 
-            mb: 2,
+            mb: 1, // Adjusted margin
             fontSize: { xs: '1.75rem', sm: '2rem' } 
           }}
         >
-          Welcome to Codone
+          Log In
         </Typography>
         
         <Typography 
@@ -101,15 +111,43 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
           color="text.secondary" 
           sx={{ mb: 3 }}
         >
-          To continue, please authorize your app.
+          Access your Codone account.
         </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <TextField
+          label="Email"
+          type="email"
+          fullWidth
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          sx={{ mb: 2 }}
+          disabled={isLoggingIn}
+        />
+
+        <TextField
+          label="Password"
+          type="password"
+          fullWidth
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          sx={{ mb: 3 }}
+          disabled={isLoggingIn}
+        />
         
         <Button
+          type="submit" // Important for form submission
           variant="contained"
           size="large"
           fullWidth
-          onClick={openAuthScreen}
-          disabled={isAuthorizing}
+          disabled={isLoggingIn}
           sx={{ 
             py: 1.2,
             textTransform: 'none',
@@ -119,7 +157,7 @@ export function AuthScreen({ onAuth }: { onAuth: () => void }) {
             boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
           }}
         >
-          {isAuthorizing ? "Authorizing..." : "Authorize with Webflow"}
+          {isLoggingIn ? "Logging In..." : "Log In"}
         </Button>
       </Paper>
     </Container>

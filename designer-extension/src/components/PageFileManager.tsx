@@ -332,10 +332,13 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
     if (!selectedPageId) return;
     
     setSaveStatus("saving");
+    console.log("[PageFileManager.saveChanges] Attempting to save changes for page:", selectedPageId);
     
     // Convert IDs back to numbers for Supabase
     const headIdsForSave = headList.map(id => Number(id));
     const bodyIdsForSave = bodyList.map(id => Number(id));
+    console.log("[PageFileManager.saveChanges] headList:", headList, "bodyList:", bodyList);
+    console.log("[PageFileManager.saveChanges] headIdsForSave:", headIdsForSave, "bodyIdsForSave:", bodyIdsForSave);
 
     // Use our mapping to find the correct Supabase page ID
     const sbPageId = pageMapping[selectedPageId];
@@ -346,6 +349,7 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
     }
     
     try {
+      console.log("[PageFileManager.saveChanges] Sending PUT request to:", `${base_url}/api/pages/${sbPageId}`, "with body:", { head_files: headIdsForSave, body_files: bodyIdsForSave });
       const response = await fetch(`${base_url}/api/pages/${sbPageId}`, {
         method: "PUT",
         headers: {
@@ -363,6 +367,7 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
       }
       
       const result = await response.json();
+      console.log("[PageFileManager.saveChanges] Save changes response:", result);
       
       // update sbPages local state to reflect changes
       const headStr = headIdsForSave.map(id => String(id));
@@ -379,6 +384,7 @@ export function PageFileManager({ siteId }: PageFileManagerProps) {
       });
       
       setSaveStatus("success");
+      console.log("[PageFileManager.saveChanges] Save successful.");
     } catch (e) {
       console.error("Error saving changes:", e);
       setSaveStatus("error");

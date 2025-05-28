@@ -69,6 +69,7 @@ export function useScriptSelection() {
       sessionToken: string;
     }) => {
       if (!selectedScript?.id) return;
+      console.log("[useScriptSelection.applyScript] Applying script:", { selectedScript, targetType, targetId, location });
 
       // For optimistic updates
       const updateKey = getApplicationStatusKey(
@@ -81,6 +82,7 @@ export function useScriptSelection() {
         if (Array.isArray(targetId)) {
           // Apply to each page with a small delay to avoid rate limits
           for (const id of targetId) {
+            console.log("[useScriptSelection.applyScript] Calling customCodeApi.applyScript for page:", { scriptId: selectedScript.id, targetType: "page", targetId: id, location, version: selectedScript.version });
             await customCodeApi.applyScript(
               {
                 scriptId: selectedScript.id,
@@ -97,6 +99,7 @@ export function useScriptSelection() {
             }
           }
         } else {
+          console.log("[useScriptSelection.applyScript] Calling customCodeApi.applyScript for site/page:", { scriptId: selectedScript.id, targetType, targetId, location, version: selectedScript.version });
           await customCodeApi.applyScript(
             {
               scriptId: selectedScript.id,
@@ -118,6 +121,7 @@ export function useScriptSelection() {
           exact: true,
           type: "active",
         });
+        console.log("[useScriptSelection.applyScript] Script application successful and status refetched.");
       } catch (error) {
         console.error("Error applying script:", error);
         throw error;

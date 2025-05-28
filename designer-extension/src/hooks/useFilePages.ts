@@ -24,6 +24,7 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
     
     setIsLoading(true);
     setError(null);
+    console.log("[useFilePages.fetchPages] Fetching pages for file:", { siteId, fileId });
     
     try {
       // Fetch all pages for the site
@@ -39,6 +40,7 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
       
       const data = await response.json();
       const sitePages = data.pages || [];
+      console.log("[useFilePages.fetchPages] Received site pages:", sitePages);
       
       // Filter pages that use this file
       const pagesUsingFile: PageInfo[] = [];
@@ -94,6 +96,7 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
       });
       
       setPages(pagesUsingFile);
+      console.log("[useFilePages.fetchPages] Pages using file:", pagesUsingFile);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error fetching pages for file:", err);
@@ -107,9 +110,11 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
     
     setIsLoading(true);
     setError(null);
+    console.log("[useFilePages.removeFileFromPage] Removing file from page:", { pageId, fileId, location });
     
     try {
       // First get the current page data
+      console.log("[useFilePages.removeFileFromPage] Fetching current page data for pageId:", pageId);
       const response = await fetch(`${base_url}/api/pages/${pageId}`, {
         headers: {
           Authorization: `Bearer ${sessionToken}`,
@@ -121,6 +126,7 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
       }
       
       const { page } = await response.json();
+      console.log("[useFilePages.removeFileFromPage] Current page data:", page);
       
       // Parse current files
       let files: string[] = [];
@@ -138,8 +144,10 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
       
       // Remove the file ID from the list
       const updatedFiles = files.filter((id) => id !== String(fileId));
+      console.log("[useFilePages.removeFileFromPage] Updated files list:", updatedFiles);
       
       // Update the page
+      console.log("[useFilePages.removeFileFromPage] Sending PUT request to update page:", pageId, "with body:", { [filesKey]: updatedFiles });
       const updateResponse = await fetch(`${base_url}/api/pages/${pageId}`, {
         method: "PUT",
         headers: {
@@ -154,6 +162,7 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
       if (!updateResponse.ok) {
         throw new Error("Failed to update page");
       }
+      console.log("[useFilePages.removeFileFromPage] Page update successful.");
       
       // Update local state
       setPages(prev => prev.filter(p => !(p.id === pageId && p.location === location)));
@@ -168,6 +177,7 @@ export function useFilePages(siteId: string, fileId: string | null, sessionToken
         } 
       });
       document.dispatchEvent(pageUpdateEvent);
+      console.log("[useFilePages.removeFileFromPage] Dispatched page-files-updated event.");
       
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred");

@@ -5,6 +5,7 @@ import { logger } from "../../utils/logger";
 export const customCodeApi = {
   // Register a new script
   registerScript: async (params: ScriptRegistrationRequest, token: string) => {
+    console.log("[customCodeApi.registerScript] Registering script with params:", params);
     const response = await fetch(`${base_url}/api/custom-code/register`, {
       method: "POST",
       headers: {
@@ -13,7 +14,9 @@ export const customCodeApi = {
       },
       body: JSON.stringify(params),
     });
-    return response.json();
+    const responseData = await response.json();
+    console.log("[customCodeApi.registerScript] Response from /api/custom-code/register:", responseData);
+    return responseData;
   },
 
   // Get list of registered scripts
@@ -31,6 +34,7 @@ export const customCodeApi = {
 
   // Apply script to site or page
   applyScript: async (params: CodeApplication, token: string) => {
+    console.log("[customCodeApi.applyScript] Applying script with params:", params);
     const response = await fetch(`${base_url}/api/custom-code/apply`, {
       method: "POST",
       headers: {
@@ -40,7 +44,9 @@ export const customCodeApi = {
       body: JSON.stringify(params),
     });
     logger.debug("Applying script with params:", params);
-    return response.json();
+    const responseData = await response.json();
+    console.log("[customCodeApi.applyScript] Response from /api/custom-code/apply:", responseData);
+    return responseData;
   },
 
   // Get status for site

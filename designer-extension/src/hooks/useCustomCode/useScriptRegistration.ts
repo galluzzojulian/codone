@@ -28,6 +28,7 @@ export function useScriptRegistration(sessionToken: string, siteId: string) {
 
     setIsRegistering(true);
     try {
+      console.log("[useScriptRegistration] Registering script with data:", { code, isHosted, siteId });
       const scriptData: CustomCode = {
         displayName: `Boilerplate Script ${Date.now()}`,
         version: "1.0.0",
@@ -39,11 +40,13 @@ export function useScriptRegistration(sessionToken: string, siteId: string) {
         isHosted,
         scriptData,
       };
+      console.log("[useScriptRegistration] Script registration request:", request);
 
       const { result } = await customCodeApi.registerScript(
         request,
         sessionToken
       );
+      console.log("[useScriptRegistration] Script registration result:", result);
       return result;
     } catch (error) {
       console.error("Error registering script:", error);
